@@ -58,10 +58,10 @@ function Home() {
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
-          <ProductPreview name="Wireless Headphones" price="₹2,499" />
+          <ProductPreview name="Wireless Headphones" price="₹1,499" />
           <ProductPreview name="Smart Watch" price="₹3,999" />
           <ProductPreview name="Running Shoes" price="₹1,999" />
-          <ProductPreview name="Backpack" price="₹1,299" />
+          <ProductPreview name="Backpack" price="₹1,199" />
         </div>
       </section>
     </main>
