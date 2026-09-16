@@ -5,6 +5,7 @@ import db from "./configs/db.js";
 
 dotenv.config();
 import userRoutes from "./routes/UserRoutes.js"
+import tenantRoutes from "./routes/TenantRoutes.js"
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -13,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/auth", userRoutes)
+app.use("/api/tenants", tenantRoutes)
 
 app.listen(port, () => {
     console.log(`Server is running on : http://localhost:${port}`);
