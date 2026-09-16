@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 function Home() {
   return (
     <main>
-      {/* Hero Section */}
+      {/* Hero */}
       <section className="bg-gray-100">
         <div className="mx-auto flex min-h-[500px] max-w-7xl items-center px-6 py-16">
           <div className="max-w-2xl">
@@ -49,19 +49,35 @@ function Home() {
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold">Featured Products</h2>
 
-          <Link
-            to="/products"
-            className="font-medium underline"
-          >
+          <Link to="/products" className="font-medium underline">
             View All
           </Link>
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
-          <ProductPreview name="Wireless Headphones" price="₹1,499" />
-          <ProductPreview name="Smart Watch" price="₹3,999" />
-          <ProductPreview name="Running Shoes" price="₹1,999" />
-          <ProductPreview name="Backpack" price="₹1,199" />
+          <ProductPreview
+            id={1}
+            name="Wireless Headphones"
+            price="₹2,499"
+          />
+
+          <ProductPreview
+            id={2}
+            name="Smart Watch"
+            price="₹3,999"
+          />
+
+          <ProductPreview
+            id={3}
+            name="Running Shoes"
+            price="₹1,999"
+          />
+
+          <ProductPreview
+            id={4}
+            name="Travel Backpack"
+            price="₹1,299"
+          />
         </div>
       </section>
     </main>
@@ -76,9 +92,12 @@ function Category({ name }) {
   );
 }
 
-function ProductPreview({ name, price }) {
+function ProductPreview({ id, name, price }) {
   return (
-    <div className="rounded-xl border bg-white p-4 shadow-sm">
+    <Link
+      to={`/products/${id}`}
+      className="block rounded-xl border bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+    >
       <div className="flex h-48 items-center justify-center rounded-lg bg-gray-100">
         <span className="text-gray-400">Product Image</span>
       </div>
@@ -86,7 +105,11 @@ function ProductPreview({ name, price }) {
       <h3 className="mt-4 font-semibold">{name}</h3>
 
       <p className="mt-2 font-medium">{price}</p>
-    </div>
+
+      <p className="mt-3 text-sm text-gray-500">
+        View Product →
+      </p>
+    </Link>
   );
 }
 
