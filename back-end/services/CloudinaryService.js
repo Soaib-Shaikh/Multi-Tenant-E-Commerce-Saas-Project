@@ -1,11 +1,11 @@
-import cloudinary from "../config/cloudinary.js";
+import cloudinary from "../configs/cloudinary.js";
 import { Readable } from "stream";
 
 export const uploadToCloudinary = (file, folder) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        folder
+        folder,
       },
       (error, result) => {
         if (error) {
@@ -16,7 +16,6 @@ export const uploadToCloudinary = (file, folder) => {
       }
     );
 
-    const stream = Readable.from(file.buffer);
-    stream.pipe(uploadStream);
+    Readable.from(file.buffer).pipe(uploadStream);
   });
 };
