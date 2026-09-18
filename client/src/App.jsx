@@ -8,6 +8,7 @@ import ProductDetails from "./pages/customer/ProductDetails";
 import Cart from "./pages/customer/Cart";
 import Checkout from "./pages/customer/Checkout";
 
+
 function App() {
   return (
     <BrowserRouter>
