@@ -95,12 +95,58 @@ function Dashboard() {
               </p>
             </div>
 
-            <Link
-              to="/admin/products"
-              className="rounded-lg bg-black px-5 py-3 text-center font-medium text-white transition hover:bg-gray-800"
-            >
-              + Add Product
-            </Link>
+            {/* Management Buttons */}
+            <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+
+  <Link
+    to="/admin/vendors"
+    className="rounded-xl border bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-gray-400 hover:shadow-md"
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="text-lg font-bold">Vendors</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Manage registered vendors
+        </p>
+      </div>
+
+      <span className="text-2xl">→</span>
+    </div>
+  </Link>
+
+  <Link
+            to="/admin/customers"
+               className="rounded-xl border bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-gray-400 hover:shadow-md"
+                >
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="text-lg font-bold">Customers</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Manage customer accounts
+        </p>
+      </div>
+
+      <span className="text-2xl">→</span>
+    </div>
+  </Link>
+
+  <Link
+    to="/admin/orders"
+    className="rounded-xl border bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-gray-400 hover:shadow-md"
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="text-lg font-bold">Orders</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          View and manage orders
+        </p>
+      </div>
+
+      <span className="text-2xl">→</span>
+    </div>
+  </Link>
+
+</div>
 
           </div>
 
@@ -144,7 +190,7 @@ function Dashboard() {
         </div>
 
         {/* Sales + Quick Actions */}
-        <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="mt-8 grid-cols-1 gap-8 lg:grid-cols-3">
 
           {/* Sales Overview */}
           <div className="rounded-xl border bg-white p-6 shadow-sm lg:col-span-2">
@@ -189,7 +235,7 @@ function Dashboard() {
           </div>
 
           {/* Quick Actions */}
-          <div className="rounded-xl border bg-white p-6 shadow-sm">
+          {/* <div className="rounded-xl border bg-white p-6 shadow-sm">
 
             <h2 className="text-xl font-bold">
               Quick Actions
@@ -227,7 +273,7 @@ function Dashboard() {
 
             </div>
 
-          </div>
+          </div> */}
 
         </div>
 
