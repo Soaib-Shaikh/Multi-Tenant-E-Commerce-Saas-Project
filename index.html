@@ -2,12 +2,129 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ecommerce-saas</title>
+    <meta name="theme-color" content="#f5f1e8" />
+    <meta
+      name="description"
+      content="ShopSaaS brings trusted products from multiple stores into one simple shopping experience."
+    />
+    <meta property="og:title" content="ShopSaaS | Everything in one place" />
+    <meta
+      property="og:description"
+      content="Discover products from multiple stores with a simple, secure shopping experience."
+    />
+    <meta property="og:type" content="website" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>ShopSaaS | Everything in one place</title>
+    <style>
+      :root {
+        color: #17221d;
+        background: #f5f1e8;
+        font-family: "DM Sans", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+      }
+
+      #root {
+        min-height: 100vh;
+      }
+
+      .app-loader {
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(circle at 82% 12%, rgba(218, 231, 211, 0.8), transparent 28%),
+          linear-gradient(135deg, #f5f1e8 0%, #fbfaf6 54%, #e9f0e5 100%);
+      }
+
+      .app-loader__content {
+        text-align: center;
+      }
+
+      .app-loader__mark {
+        display: inline-grid;
+        width: 52px;
+        height: 52px;
+        margin-bottom: 18px;
+        place-items: center;
+        border-radius: 16px;
+        color: #f5f1e8;
+        background: #1e5b45;
+        box-shadow: 0 14px 32px rgba(30, 91, 69, 0.2);
+        font-family: "Playfair Display", serif;
+        font-size: 25px;
+        font-weight: 700;
+      }
+
+      .app-loader__content p {
+        margin: 0;
+        color: #68736b;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .app-loader__line {
+        width: 86px;
+        height: 3px;
+        margin: 16px auto 0;
+        overflow: hidden;
+        border-radius: 99px;
+        background: #dce5d8;
+      }
+
+      .app-loader__line::after {
+        display: block;
+        width: 42%;
+        height: 100%;
+        border-radius: inherit;
+        background: #d48652;
+        content: "";
+        animation: loader-slide 1.2s ease-in-out infinite;
+      }
+
+      @keyframes loader-slide {
+        from {
+          transform: translateX(-120%);
+        }
+        to {
+          transform: translateX(240%);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .app-loader__line::after {
+          animation: none;
+          transform: translateX(60%);
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="app-loader" aria-label="Loading ShopSaaS" role="status">
+        <div class="app-loader__content">
+          <div class="app-loader__mark" aria-hidden="true">S</div>
+          <p>Preparing your storefront</p>
+          <div class="app-loader__line" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
