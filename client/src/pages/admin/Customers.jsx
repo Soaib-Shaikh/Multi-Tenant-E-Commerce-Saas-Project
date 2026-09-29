@@ -101,6 +101,7 @@ function Customers() {
 
       {/* Main Content */}
       <section className="mx-auto max-w-7xl px-6 py-10">
+        <p className="mb-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">Customer rows and summary figures below are sample data for the frontend demo.</p>
 
         {/* Statistics */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -453,4 +454,3 @@ function StatusBadge({ status }) {
 }
 
 export default Customers;
-

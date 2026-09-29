@@ -155,6 +155,7 @@ function Dashboard() {
 
       {/* Main */}
       <section className="mx-auto max-w-7xl px-6 py-10">
+        <p className="mb-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">Dashboard totals and charts are sample figures; this frontend is not connected to the admin reporting API.</p>
 
         {/* Stats */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -595,41 +596,6 @@ function SalesBar({ day, amount, height }) {
   );
 }
 
-/* Quick Action */
-
-function QuickAction({
-  title,
-  description,
-  to,
-}) {
-  return (
-    <Link
-      to={to}
-      className="block rounded-lg border p-4 transition hover:-translate-y-0.5 hover:border-gray-400 hover:shadow-sm"
-    >
-
-      <div className="flex items-center justify-between">
-
-        <div>
-          <p className="font-medium">
-            {title}
-          </p>
-
-          <p className="mt-1 text-sm text-gray-500">
-            {description}
-          </p>
-        </div>
-
-        <span className="text-xl">
-          →
-        </span>
-
-      </div>
-
-    </Link>
-  );
-}
-
 /* Order Status */
 
 function OrderStatus({ status }) {
@@ -681,4 +647,3 @@ function SummaryRow({
 }
 
 export default Dashboard;
-
