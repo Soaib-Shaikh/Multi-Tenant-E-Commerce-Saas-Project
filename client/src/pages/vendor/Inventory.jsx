@@ -1,246 +1,94 @@
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { updateProduct } from "../../redux/vendorProductSlice";
+
 function Inventory() {
-  const inventory = [
-    {
-      id: 1,
-      product: "Wireless Headphones",
-      category: "Electronics",
-      stock: 32,
-      minimum: 10,
-      status: "In Stock",
-    },
-    {
-      id: 2,
-      product: "Smart Watch",
-      category: "Electronics",
-      stock: 18,
-      minimum: 10,
-      status: "In Stock",
-    },
-    {
-      id: 3,
-      product: "Running Shoes",
-      category: "Sports",
-      stock: 9,
-      minimum: 15,
-      status: "Low Stock",
-    },
-    {
-      id: 4,
-      product: "Travel Backpack",
-      category: "Fashion",
-      stock: 25,
-      minimum: 10,
-      status: "In Stock",
-    },
-    {
-      id: 5,
-      product: "Bluetooth Speaker",
-      category: "Electronics",
-      stock: 0,
-      minimum: 10,
-      status: "Out of Stock",
-    },
-    {
-      id: 6,
-      product: "Cotton T-Shirt",
-      category: "Fashion",
-      stock: 6,
-      minimum: 15,
-      status: "Low Stock",
-    },
-  ];
+  const products = useSelector((state) => state.vendorProducts.products);
+  const dispatch = useDispatch();
+  const [search, setSearch] = useState("");
+  const [stockDrafts, setStockDrafts] = useState({});
+  const [filter, setFilter] = useState("all");
+  const [notice, setNotice] = useState("");
+  const lowStock = products.filter((product) => Number(product.stock) > 0 && Number(product.stock) <= 10).length;
+  const outOfStock = products.filter((product) => Number(product.stock) === 0).length;
+  const visible = useMemo(() => products.filter((product) => {
+    const matchesSearch = `${product.name} ${product.category} ${product.brand || ""}`.toLowerCase().includes(search.toLowerCase());
+    const stock = Number(product.stock || 0);
+    const matchesFilter = filter === "all" || (filter === "low" && stock > 0 && stock <= 10) || (filter === "out" && stock === 0);
+    return matchesSearch && matchesFilter;
+  }), [products, search, filter]);
+
+  const saveStock = (product) => {
+    const value = Number(stockDrafts[product.id]);
+    if (!Number.isInteger(value) || value < 0) {
+      setNotice("Enter a whole number of zero or more.");
+      return;
+    }
+    dispatch(updateProduct({ ...product, stock: value }));
+    setStockDrafts((drafts) => {
+      const next = { ...drafts };
+      delete next[product.id];
+      return next;
+    });
+    setNotice(`${product.name} stock updated.`);
+  };
 
   return (
-    <main className="min-h-screen bg-gray-50">
-
-      {/* Header */}
-      <section className="border-b bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-
-          <p className="mb-2 font-medium text-gray-600">
-            Vendor Panel
-          </p>
-
-          <h1 className="text-4xl font-bold">
-            Inventory
-          </h1>
-
-          <p className="mt-3 text-gray-600">
-            Monitor your product stock and inventory levels.
-          </p>
-
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 py-10">
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-
-          <StatCard
-            title="Total Products"
-            value="124"
-          />
-
-          <StatCard
-            title="Total Stock"
-            value="2,486"
-          />
-
-          <StatCard
-            title="Low Stock"
-            value="9"
-          />
-
-          <StatCard
-            title="Out of Stock"
-            value="3"
-          />
-
+    <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6">
+      <div className="mx-auto max-w-7xl">
+        <Link to="/vendor/dashboard" className="text-sm font-semibold text-orange-600">← Vendor dashboard</Link>
+        <div className="mt-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div><p className="font-semibold text-orange-600">Vendor workspace</p><h1 className="mt-1 text-4xl font-bold">Inventory</h1><p className="mt-2 text-slate-600">Search listings and update stock levels.</p></div>
+          <Link to="/vendor/products/add" className="rounded-lg bg-orange-500 px-5 py-3 text-center font-semibold text-white hover:bg-orange-600">+ Add product</Link>
         </div>
 
-        {/* Inventory Table */}
-        <div className="mt-8 overflow-hidden rounded-xl border bg-white shadow-sm">
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <InventoryStat label="Products" value={products.length} />
+          <InventoryStat label="Low stock · 10 or fewer" value={lowStock} />
+          <InventoryStat label="Out of stock" value={outOfStock} />
+        </div>
 
-          <div className="border-b p-6">
-
-            <h2 className="text-xl font-bold">
-              Stock Overview
-            </h2>
-
-            <p className="mt-1 text-sm text-gray-500">
-              Monitor stock levels for all your products.
-            </p>
-
+        <section className="mt-8 overflow-hidden rounded-2xl border bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b p-5 md:flex-row md:items-center md:justify-between">
+            <h2 className="text-lg font-semibold">Stock overview</h2>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <input aria-label="Search inventory" placeholder="Search products" value={search} onChange={(event) => setSearch(event.target.value)} className="rounded-lg border px-4 py-2.5 outline-none focus:border-orange-500" />
+              <select aria-label="Filter inventory" value={filter} onChange={(event) => setFilter(event.target.value)} className="rounded-lg border bg-white px-4 py-2.5">
+                <option value="all">All stock levels</option><option value="low">Low stock</option><option value="out">Out of stock</option>
+              </select>
+            </div>
           </div>
-
+          {notice && <p role="status" className="border-b bg-green-50 px-5 py-3 text-sm text-green-800">{notice}</p>}
           <div className="overflow-x-auto">
-
-            <table className="w-full">
-
-              <thead className="bg-gray-50">
-
-                <tr className="border-b text-left text-sm text-gray-500">
-
-                  <th className="px-6 py-4 font-medium">
-                    Product
-                  </th>
-
-                  <th className="px-6 py-4 font-medium">
-                    Category
-                  </th>
-
-                  <th className="px-6 py-4 font-medium">
-                    Current Stock
-                  </th>
-
-                  <th className="px-6 py-4 font-medium">
-                    Minimum Stock
-                  </th>
-
-                  <th className="px-6 py-4 font-medium">
-                    Status
-                  </th>
-
-                  <th className="px-6 py-4 font-medium">
-                    Action
-                  </th>
-
-                </tr>
-
-              </thead>
-
-              <tbody>
-
-                {inventory.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="border-b last:border-b-0 hover:bg-gray-50"
-                  >
-
-                    <td className="px-6 py-5">
-
-                      <div className="flex items-center gap-3">
-
-                        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-400">
-                          Image
-                        </div>
-
-                        <span className="font-medium">
-                          {item.product}
-                        </span>
-
-                      </div>
-
-                    </td>
-
-                    <td className="px-6 py-5 text-gray-600">
-                      {item.category}
-                    </td>
-
-                    <td className="px-6 py-5">
-
-                      <span className="font-semibold">
-                        {item.stock}
-                      </span>
-
-                      <span className="ml-1 text-sm text-gray-500">
-                        units
-                      </span>
-
-                    </td>
-
-                    <td className="px-6 py-5 text-gray-600">
-                      {item.minimum}
-                    </td>
-
-                    <td className="px-6 py-5">
-
-                      <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium">
-                        {item.status}
-                      </span>
-
-                    </td>
-
-                    <td className="px-6 py-5">
-
-                      <button className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800">
-                        Update Stock
-                      </button>
-
-                    </td>
-
-                  </tr>
-                ))}
-
+            <table className="w-full min-w-[680px] text-left text-sm">
+              <thead className="bg-slate-50 text-slate-500"><tr><th className="px-5 py-3 font-medium">Product</th><th className="px-5 py-3 font-medium">Category</th><th className="px-5 py-3 font-medium">Current stock</th><th className="px-5 py-3 font-medium">Status</th><th className="px-5 py-3 font-medium">Update stock</th></tr></thead>
+              <tbody className="divide-y">
+                {visible.map((product) => {
+                  const stock = Number(product.stock || 0);
+                  const status = stock === 0 ? "Out of stock" : stock <= 10 ? "Low stock" : "In stock";
+                  const draft = stockDrafts[product.id] ?? String(stock);
+                  return <tr key={product.id}>
+                    <td className="px-5 py-4"><div className="flex items-center gap-3">{product.image ? <img src={product.image} alt="" className="h-11 w-11 rounded-lg object-cover" /> : <span className="grid h-11 w-11 place-items-center rounded-lg bg-orange-50">▧</span>}<div><p className="font-medium">{product.name}</p><p className="text-xs text-slate-500">{product.brand || ""}</p></div></div></td>
+                    <td className="px-5 py-4 text-slate-600">{product.category}</td>
+                    <td className="px-5 py-4 font-semibold">{stock}</td>
+                    <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${stock === 0 ? "bg-red-50 text-red-700" : stock <= 10 ? "bg-amber-50 text-amber-700" : "bg-green-50 text-green-700"}`}>{status}</span></td>
+                    <td className="px-5 py-4"><div className="flex gap-2"><input aria-label={`New stock for ${product.name}`} type="number" min="0" step="1" value={draft} onChange={(event) => setStockDrafts((drafts) => ({ ...drafts, [product.id]: event.target.value }))} className="w-24 rounded-lg border px-3 py-2" /><button type="button" disabled={Number(draft) === stock || draft === ""} onClick={() => saveStock(product)} className="rounded-lg bg-slate-900 px-3 py-2 font-medium text-white enabled:hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Save</button></div></td>
+                  </tr>;
+                })}
+                {visible.length === 0 && <tr><td colSpan="5" className="px-5 py-12 text-center text-slate-500">No inventory items match these filters.</td></tr>}
               </tbody>
-
             </table>
-
           </div>
-
-        </div>
-
-      </section>
-
+        </section>
+        <p className="mt-4 text-xs text-slate-500">Inventory changes are stored in this browser’s demo catalog.</p>
+      </div>
     </main>
   );
 }
 
-function StatCard({ title, value }) {
-  return (
-    <div className="rounded-xl border bg-white p-6 shadow-sm">
-
-      <p className="text-sm font-medium text-gray-500">
-        {title}
-      </p>
-
-      <h2 className="mt-3 text-3xl font-bold">
-        {value}
-      </h2>
-
-    </div>
-  );
+function InventoryStat({ label, value }) {
+  return <div className="rounded-2xl border bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p></div>;
 }
 
 export default Inventory;

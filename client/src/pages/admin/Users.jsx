@@ -1,0 +1,10 @@
+import { useMemo, useState } from "react";
+import { useSelector } from "react-redux";
+
+export default function Users() {
+  const currentUser = useSelector((state) => state.auth.user);
+  const [query, setQuery] = useState("");
+  const users = useMemo(() => currentUser ? [{ ...currentUser, status: "Current browser session" }] : [], [currentUser]);
+  const shown = users.filter((user) => `${user.name} ${user.email} ${user.role}`.toLowerCase().includes(query.toLowerCase()));
+  return <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6"><div className="mx-auto max-w-7xl"><p className="font-semibold text-orange-600">Platform administration</p><h1 className="mt-2 text-4xl font-bold">Users</h1><p className="mt-2 text-slate-600">User information available to this frontend demo.</p><section className="mt-8 overflow-hidden rounded-2xl border bg-white"><div className="flex flex-col gap-4 border-b p-5 sm:flex-row sm:items-center sm:justify-between"><h2 className="font-semibold">Current session user</h2><input aria-label="Search users" placeholder="Search users" value={query} onChange={(event) => setQuery(event.target.value)} className="rounded-lg border px-4 py-2.5" /></div><div className="overflow-x-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead className="bg-slate-50 text-slate-500"><tr>{["Name", "Email", "Role", "Status"].map((title) => <th key={title} className="px-5 py-3 font-medium">{title}</th>)}</tr></thead><tbody>{shown.map((user) => <tr key={user.email} className="border-t"><td className="px-5 py-4 font-medium">{user.name}</td><td className="px-5 py-4">{user.email}</td><td className="px-5 py-4 capitalize">{user.role || "customer"}</td><td className="px-5 py-4">{user.status}</td></tr>)}{shown.length === 0 && <tr><td colSpan="4" className="px-5 py-10 text-center text-slate-500">No users are available in the local session.</td></tr>}</tbody></table></div></section><p className="mt-4 text-xs text-slate-500">No server user API is connected to this frontend page.</p></div></main>;
+}

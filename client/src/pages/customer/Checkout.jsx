@@ -1,360 +1,383 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+
+import { clearCart } from "../../redux/cartSlice";
+import { addOrder } from "../../redux/orderSlice";
 
 function Checkout() {
-  const cartItems = [
-    {
-      id: 1,
-      name: "Wireless Headphones",
-      price: 2499,
-      quantity: 1,
-    },
-    {
-      id: 2,
-      name: "Smart Watch",
-      price: 3999,
-      quantity: 1,
-    },
-    {
-      id: 3,
-      name: "Running Shoes",
-      price: 1999,
-      quantity: 2,
-    },
-  ];
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const cartItems = useSelector((state) => state.cart.items);
+  const user = useSelector((state) => state.auth.user);
+
+  const [paymentMethod, setPaymentMethod] = useState("Cash on Delivery");
+
+  const [customer, setCustomer] = useState({
+    firstName: user?.name?.split(" ")[0] || "",
+    lastName: user?.name?.split(" ").slice(1).join(" ") || "",
+    email: user?.email || "",
+    phone: "",
+    address: "",
+    city: "",
+    pincode: "",
+  });
 
   const subtotal = cartItems.reduce(
     (total, item) => total + item.price * item.quantity,
     0
   );
 
-  const delivery = subtotal >= 5000 ? 0 : 99;
-  const total = subtotal + delivery;
+  const shipping = subtotal > 0 ? 50 : 0;
+  const total = subtotal + shipping;
+
+  const handleChange = (e) => {
+    setCustomer({
+      ...customer,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handlePlaceOrder = (event) => {
+    event.preventDefault();
+    if (cartItems.length === 0) {
+      return;
+    }
+
+    const order = {
+      id: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
+
+      date: new Date().toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+
+      items: cartItems.map((item) => ({ ...item })),
+
+      customer,
+
+      subtotal,
+
+      shipping,
+
+      total,
+
+      paymentMethod,
+
+      status: "Order Placed",
+    };
+
+    dispatch(addOrder(order));
+    dispatch(clearCart());
+
+    navigate("/order-success");
+  };
+
+  if (cartItems.length === 0) {
+    return (
+      <main className="flex min-h-[70vh] items-center justify-center bg-gray-50 px-6">
+        <div className="text-center">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-100 text-4xl">
+            🛒
+          </div>
+
+          <h1 className="mt-6 text-3xl font-bold">
+            Your Cart is Empty
+          </h1>
+
+          <p className="mt-3 text-gray-500">
+            Add some products before checking out.
+          </p>
+
+          <Link
+            to="/products"
+            className="mt-6 inline-block rounded-lg bg-orange-500 px-6 py-3 font-semibold text-white hover:bg-orange-600"
+          >
+            Continue Shopping
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <section className="border-b bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <p className="mb-2 font-medium text-gray-600">
-            ShopSaaS Checkout
+      <div className="mx-auto max-w-7xl px-6 py-12">
+
+        <div className="mb-8">
+          <p className="font-semibold text-orange-500">
+            ShopSaaS
           </p>
 
-          <h1 className="text-4xl font-bold md:text-5xl">
+          <h1 className="mt-1 text-4xl font-bold">
             Checkout
           </h1>
-
-          <p className="mt-3 text-gray-600">
-            Complete your order with a simple and secure checkout.
-          </p>
         </div>
-      </section>
 
-      {/* Checkout Content */}
-      <section className="mx-auto max-w-7xl px-6 py-12">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="grid gap-8 lg:grid-cols-3">
 
-          {/* Left Side */}
-          <div className="space-y-8 lg:col-span-2">
+          {/* Customer Details */}
+          <div className="rounded-xl border bg-white p-6 shadow-sm lg:col-span-2">
 
-            {/* Contact Information */}
-            <div className="rounded-xl border bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-bold">
-                Contact Information
-              </h2>
+            <h2 className="text-xl font-bold">
+              Customer Information
+            </h2>
 
-              <p className="mt-1 text-sm text-gray-500">
-                Enter your contact details for order updates.
-              </p>
+            <form onSubmit={handlePlaceOrder}>
+            <div className="mt-6 grid gap-5 md:grid-cols-2">
 
-              <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  First Name
+                </label>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    First Name
-                  </label>
+                <input
+                  type="text"
+                  name="firstName"
+                  required
+                  value={customer.firstName}
+                  onChange={handleChange}
+                  placeholder="Enter first name"
+                  className="w-full rounded-lg border px-4 py-3 outline-none focus:border-orange-500"
+                />
+              </div>
 
-                  <input
-                    type="text"
-                    placeholder="Enter your first name"
-                    className="w-full rounded-lg border px-4 py-3 outline-none transition focus:border-black"
-                  />
-                </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Last Name
+                </label>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Last Name
-                  </label>
+                <input
+                  type="text"
+                  name="lastName"
+                  required
+                  value={customer.lastName}
+                  onChange={handleChange}
+                  placeholder="Enter last name"
+                  className="w-full rounded-lg border px-4 py-3 outline-none focus:border-orange-500"
+                />
+              </div>
 
-                  <input
-                    type="text"
-                    placeholder="Enter your last name"
-                    className="w-full rounded-lg border px-4 py-3 outline-none transition focus:border-black"
-                  />
-                </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Email
+                </label>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Email Address
-                  </label>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  value={customer.email}
+                  onChange={handleChange}
+                  placeholder="Enter email"
+                  className="w-full rounded-lg border px-4 py-3 outline-none focus:border-orange-500"
+                />
+              </div>
 
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    className="w-full rounded-lg border px-4 py-3 outline-none transition focus:border-black"
-                  />
-                </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Phone
+                </label>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Phone Number
-                  </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  required
+                  value={customer.phone}
+                  onChange={handleChange}
+                  placeholder="Enter phone number"
+                  className="w-full rounded-lg border px-4 py-3 outline-none focus:border-orange-500"
+                />
+              </div>
 
-                  <input
-                    type="tel"
-                    placeholder="+91 98765 43210"
-                    className="w-full rounded-lg border px-4 py-3 outline-none transition focus:border-black"
-                  />
-                </div>
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm font-medium">
+                  Address
+                </label>
 
+                <textarea
+                  rows="3"
+                  name="address"
+                  required
+                  value={customer.address}
+                  onChange={handleChange}
+                  placeholder="Enter delivery address"
+                  className="w-full rounded-lg border px-4 py-3 outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  City
+                </label>
+
+                <input
+                  type="text"
+                  name="city"
+                  required
+                  value={customer.city}
+                  onChange={handleChange}
+                  placeholder="Enter city"
+                  className="w-full rounded-lg border px-4 py-3 outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Pincode
+                </label>
+
+                <input
+                  type="text"
+                  name="pincode"
+                  required
+                  value={customer.pincode}
+                  onChange={handleChange}
+                  placeholder="Enter pincode"
+                  className="w-full rounded-lg border px-4 py-3 outline-none focus:border-orange-500"
+                />
               </div>
             </div>
 
-            {/* Shipping Address */}
-            <div className="rounded-xl border bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-bold">
-                Shipping Address
-              </h2>
+            {/* Payment */}
+            <div className="mt-10 border-t pt-8">
 
-              <p className="mt-1 text-sm text-gray-500">
-                Where should we deliver your order?
-              </p>
-
-              <div className="mt-6 space-y-5">
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Address
-                  </label>
-
-                  <textarea
-                    rows="3"
-                    placeholder="Enter your full address"
-                    className="w-full resize-none rounded-lg border px-4 py-3 outline-none transition focus:border-black"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-
-                  <div>
-                    <label className="mb-2 block text-sm font-medium">
-                      City
-                    </label>
-
-                    <input
-                      type="text"
-                      placeholder="City"
-                      className="w-full rounded-lg border px-4 py-3 outline-none transition focus:border-black"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-medium">
-                      State
-                    </label>
-
-                    <input
-                      type="text"
-                      placeholder="State"
-                      className="w-full rounded-lg border px-4 py-3 outline-none transition focus:border-black"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-medium">
-                      PIN Code
-                    </label>
-
-                    <input
-                      type="text"
-                      placeholder="PIN Code"
-                      className="w-full rounded-lg border px-4 py-3 outline-none transition focus:border-black"
-                    />
-                  </div>
-
-                </div>
-
-              </div>
-            </div>
-
-            {/* Payment Method */}
-            <div className="rounded-xl border bg-white p-6 shadow-sm">
               <h2 className="text-xl font-bold">
                 Payment Method
               </h2>
 
-              <p className="mt-1 text-sm text-gray-500">
-                Select your preferred payment method.
-              </p>
+              <div className="mt-5 space-y-3">
 
-              <div className="mt-6 space-y-4">
-
-                {/* Card */}
-                <label className="flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition hover:bg-gray-50">
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border p-4 hover:border-orange-400">
                   <input
                     type="radio"
                     name="payment"
-                    defaultChecked
-                    className="h-4 w-4"
+                    value="Cash on Delivery"
+                    checked={paymentMethod === "Cash on Delivery"}
+                    onChange={(e) =>
+                      setPaymentMethod(e.target.value)
+                    }
                   />
 
-                  <div>
-                    <p className="font-medium">
-                      Credit / Debit Card
-                    </p>
-
-                    <p className="mt-1 text-sm text-gray-500">
-                      Pay securely using your card.
-                    </p>
-                  </div>
+                  <span>Cash on Delivery</span>
                 </label>
 
-                {/* UPI */}
-                <label className="flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition hover:bg-gray-50">
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border p-4 hover:border-orange-400">
                   <input
                     type="radio"
                     name="payment"
-                    className="h-4 w-4"
+                    value="UPI"
+                    checked={paymentMethod === "UPI"}
+                    onChange={(e) =>
+                      setPaymentMethod(e.target.value)
+                    }
                   />
 
-                  <div>
-                    <p className="font-medium">
-                      UPI
-                    </p>
-
-                    <p className="mt-1 text-sm text-gray-500">
-                      Pay using your preferred UPI app.
-                    </p>
-                  </div>
+                  <span>UPI</span>
                 </label>
 
-                {/* COD */}
-                <label className="flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition hover:bg-gray-50">
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border p-4 hover:border-orange-400">
                   <input
                     type="radio"
                     name="payment"
-                    className="h-4 w-4"
+                    value="Credit / Debit Card"
+                    checked={paymentMethod === "Credit / Debit Card"}
+                    onChange={(e) =>
+                      setPaymentMethod(e.target.value)
+                    }
                   />
 
-                  <div>
-                    <p className="font-medium">
-                      Cash on Delivery
-                    </p>
-
-                    <p className="mt-1 text-sm text-gray-500">
-                      Pay when your order arrives.
-                    </p>
-                  </div>
+                  <span>Credit / Debit Card</span>
                 </label>
 
               </div>
             </div>
 
+            {/* Place Order */}
+            <button
+              type="submit"
+              className="mt-8 w-full rounded-xl bg-orange-500 px-6 py-3 font-semibold text-white transition hover:bg-orange-600"
+            >
+              Place Order • ₹{total}
+            </button>
+            <p className="mt-3 text-xs leading-5 text-gray-500">Demo checkout: choosing UPI or card records your selected method only. No payment is charged or processed.</p>
+            </form>
+
           </div>
 
-          {/* Right Side - Order Summary */}
-          <div>
-            <div className="sticky top-6 rounded-xl border bg-white p-6 shadow-sm">
+          {/* Order Summary */}
+          <div className="h-fit rounded-xl border bg-white p-6 shadow-sm">
 
-              <h2 className="text-xl font-bold">
-                Order Summary
-              </h2>
+            <h2 className="text-xl font-bold">
+              Order Summary
+            </h2>
 
-              {/* Products */}
-              <div className="mt-6 space-y-5">
+            <div className="mt-6 space-y-4">
 
-                {cartItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-4"
-                  >
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-gray-100">
-                      <span className="text-xs text-gray-400">
-                        Image
-                      </span>
-                    </div>
+              {cartItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex gap-3 border-b pb-4"
+                >
+                    {item.image ? <img
+                      src={item.image}
+                    alt={item.name}
+                    className="h-16 w-16 rounded-lg object-cover"
+                    /> : <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-orange-50">🛍️</div>}
 
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {item.name}
-                      </p>
+                  <div className="flex-1">
+                    <p className="font-medium">
+                      {item.name}
+                    </p>
 
-                      <p className="mt-1 text-sm text-gray-500">
-                        Qty: {item.quantity}
-                      </p>
-                    </div>
-
-                    <p className="text-sm font-medium">
-                      ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                    <p className="mt-1 text-sm text-gray-500">
+                      ₹{item.price} × {item.quantity}
                     </p>
                   </div>
-                ))}
 
+                  <p className="font-semibold">
+                    ₹{item.price * item.quantity}
+                  </p>
+                </div>
+              ))}
+
+              <div className="flex justify-between">
+                <span className="text-gray-500">
+                  Subtotal
+                </span>
+
+                <span>
+                  ₹{subtotal}
+                </span>
               </div>
 
-              {/* Price Details */}
-              <div className="mt-6 space-y-4 border-t pt-6">
+              <div className="flex justify-between">
+                <span className="text-gray-500">
+                  Shipping
+                </span>
 
-                <div className="flex justify-between text-gray-600">
-                  <span>Subtotal</span>
-
-                  <span>
-                    ₹{subtotal.toLocaleString("en-IN")}
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-gray-600">
-                  <span>Delivery</span>
-
-                  <span>
-                    {delivery === 0
-                      ? "Free"
-                      : `₹${delivery}`}
-                  </span>
-                </div>
-
-                <div className="border-t pt-4">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total</span>
-
-                    <span>
-                      ₹{total.toLocaleString("en-IN")}
-                    </span>
-                  </div>
-                </div>
-
+                <span>
+                  ₹{shipping}
+                </span>
               </div>
 
-              {/* Place Order */}
-              <button className="mt-6 w-full rounded-lg bg-black px-6 py-3 font-medium text-white transition hover:bg-gray-800">
-                Place Order
-              </button>
+              <div className="border-t pt-4">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total</span>
 
-              <p className="mt-4 text-center text-sm text-gray-500">
-                Your payment information is secure.
-              </p>
-
-              <Link
-                to="/cart"
-                className="mt-4 block text-center text-sm font-medium underline underline-offset-4"
-              >
-                ← Back to Cart
-              </Link>
+                  <span className="text-orange-500">
+                    ₹{total}
+                  </span>
+                </div>
+              </div>
 
             </div>
           </div>
 
         </div>
-      </section>
+      </div>
     </main>
   );
 }
