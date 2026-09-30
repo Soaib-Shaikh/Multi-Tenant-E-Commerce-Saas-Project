@@ -1,18 +1,72 @@
 import bcrypt from "bcrypt";
-import User from "../models/UserModel.js";
 import jwt from "jsonwebtoken";
 
-// Create a new user
+import User from "../models/UserModel.js";
+import Tenant from "../models/TenantModel.js";
+
+// Register User
 export const registerUser = async (req, res) => {
     try {
-        const { name, email, password, role, tenantId } = req.body;
+        const {
+            name,
+            email,
+            password,
+            role,
+            tenantId,
+            storeName,
+            slug,
+            subdomain
+        } = req.body;
 
-        // Required fields validation
-        if (!name || !email || !password || !role) {
+        // Required fields
+        if (!name || !email || !password) {
             return res.status(400).json({
                 success: false,
-                message: "Please provide all required fields."
+                message: "Please provide name, email and password."
             });
+        }
+
+        // Only customer and seller can register publicly
+        const userRole = role || "customer";
+
+        if (!["customer", "seller"].includes(userRole)) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not allowed to register with this role."
+            });
+        }
+
+        // Seller store details validation
+        if (userRole === "seller") {
+            if (!storeName || !slug || !subdomain) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Seller must provide store name, slug and subdomain."
+                });
+            }
+        }
+
+        // Customer tenant validation
+        if (userRole === "customer") {
+            if (!tenantId) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Tenant ID is required for customer registration."
+                });
+            }
+
+            const tenant = await Tenant.findOne({
+                _id: tenantId,
+                isActive: true
+            });
+
+            if (!tenant) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Active tenant not found."
+                });
+            }
         }
 
         // Strong password validation
@@ -44,33 +98,39 @@ export const registerUser = async (req, res) => {
         if (!hasUppercase) {
             return res.status(400).json({
                 success: false,
-                message: "Password must contain at least one uppercase letter."
+                message:
+                    "Password must contain at least one uppercase letter."
             });
         }
 
         if (!hasLowercase) {
             return res.status(400).json({
                 success: false,
-                message: "Password must contain at least one lowercase letter."
+                message:
+                    "Password must contain at least one lowercase letter."
             });
         }
 
         if (!hasNumber) {
             return res.status(400).json({
                 success: false,
-                message: "Password must contain at least one number."
+                message:
+                    "Password must contain at least one number."
             });
         }
 
         if (!hasSpecialCharacter) {
             return res.status(400).json({
                 success: false,
-                message: "Password must contain at least one special character."
+                message:
+                    "Password must contain at least one special character."
             });
         }
 
         // Check existing user
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({
+            email: email.toLowerCase()
+        });
 
         if (existingUser) {
             return res.status(400).json({
@@ -79,43 +139,116 @@ export const registerUser = async (req, res) => {
             });
         }
 
+        // If seller, check tenant slug/subdomain
+        if (userRole === "seller") {
+            const existingTenant = await Tenant.findOne({
+                $or: [
+                    {
+                        slug: slug.toLowerCase()
+                    },
+                    {
+                        subdomain: subdomain.toLowerCase()
+                    }
+                ]
+            });
+
+            if (existingTenant) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Store slug or subdomain already exists."
+                });
+            }
+        }
+
         // Hash password
         const hashPassword = await bcrypt.hash(password, 10);
 
-        // Create user
+        // Create User
         const newUser = await User.create({
             name,
-            email,
+            email: email.toLowerCase(),
             password: hashPassword,
-            role,
-            tenantId: tenantId || null
+            role: userRole,
+
+            // Customer gets selected tenant
+            // Seller gets tenant after tenant creation
+            tenantId: userRole === "customer" ? tenantId : null
         });
 
-        // Remove password from response
+        // Seller -> Create Tenant automatically
+        if (userRole === "seller") {
+            try {
+                const newTenant = await Tenant.create({
+                    name: storeName,
+                    slug: slug.toLowerCase(),
+                    subdomain: subdomain.toLowerCase(),
+
+                    // Seller becomes tenant owner
+                    owner: newUser._id,
+
+                    settings: {
+                        storeName: storeName,
+                        currency: "INR",
+                        contactEmail: email.toLowerCase()
+                    },
+
+                    // Seller needs Super Admin approval
+                    isActive: false
+                });
+
+                // Assign generated Tenant ID to seller
+                newUser.tenantId = newTenant._id;
+
+                await newUser.save();
+
+                // Remove password from response
+                const userResponse = newUser.toObject();
+                delete userResponse.password;
+
+                return res.status(201).json({
+                    success: true,
+                    message:
+                        "Seller registered successfully. Your store is waiting for admin approval.",
+                    user: userResponse,
+                    tenant: newTenant
+                });
+
+            } catch (tenantError) {
+                // If tenant creation fails, remove created user
+                await User.findByIdAndDelete(newUser._id);
+
+                throw tenantError;
+            }
+        }
+
+        // Customer registration
         const userResponse = newUser.toObject();
         delete userResponse.password;
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
             message: "User registered successfully.",
             user: userResponse
         });
+
     } catch (error) {
         console.error("REGISTER USER ERROR:", error);
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message
         });
     }
 };
 
+
 // Login User
 export const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Required fields validation
+        // Required fields
         if (!email || !password) {
             return res.status(400).json({
                 success: false,
@@ -124,7 +257,9 @@ export const loginUser = async (req, res) => {
         }
 
         // Find user
-        const user = await User.findOne({ email });
+        const user = await User.findOne({
+            email: email.toLowerCase()
+        });
 
         if (!user) {
             return res.status(400).json({
@@ -142,13 +277,36 @@ export const loginUser = async (req, res) => {
         }
 
         // Compare password
-        const isValid = await bcrypt.compare(password, user.password);
+        const isValid = await bcrypt.compare(
+            password,
+            user.password
+        );
 
         if (!isValid) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid email or password."
             });
+        }
+
+        // Seller tenant approval check
+        if (user.role === "seller" && user.tenantId) {
+            const tenant = await Tenant.findById(user.tenantId);
+
+            if (!tenant) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Tenant not found."
+                });
+            }
+
+            if (!tenant.isActive) {
+                return res.status(403).json({
+                    success: false,
+                    message:
+                        "Your store is waiting for admin approval."
+                });
+            }
         }
 
         // Create JWT
@@ -164,20 +322,21 @@ export const loginUser = async (req, res) => {
             }
         );
 
-        // Remove password from response
+        // Remove password
         const userResponse = user.toObject();
         delete userResponse.password;
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "User logged in successfully.",
             user: userResponse,
             token
         });
+
     } catch (error) {
         console.error("LOGIN USER ERROR:", error);
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message
         });
@@ -185,19 +344,22 @@ export const loginUser = async (req, res) => {
 };
 
 
-// Get all users
+// Get all users - Super Admin
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find().select("-password");
+        const users = await User.find()
+            .select("-password")
+            .populate("tenantId", "name slug subdomain isActive");
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             users
         });
+
     } catch (error) {
         console.error("GET ALL USERS ERROR:", error);
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message
         });
@@ -205,12 +367,14 @@ export const getAllUsers = async (req, res) => {
 };
 
 
-// Get a single user by ID
+// Get single user by ID - Super Admin
 export const getUserById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const user = await User.findById(id).select("-password");
+        const user = await User.findById(id)
+            .select("-password")
+            .populate("tenantId", "name slug subdomain isActive");
 
         if (!user) {
             return res.status(404).json({
@@ -219,14 +383,15 @@ export const getUserById = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             user
         });
+
     } catch (error) {
         console.error("GET USER ERROR:", error);
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message
         });
@@ -237,7 +402,9 @@ export const getUserById = async (req, res) => {
 // Get logged-in user
 export const getMe = async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId).select("-password");
+        const user = await User.findById(req.user.userId)
+            .select("-password")
+            .populate("tenantId", "name slug subdomain isActive");
 
         if (!user) {
             return res.status(404).json({
@@ -246,15 +413,16 @@ export const getMe = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "User fetched successfully.",
             user
         });
+
     } catch (error) {
         console.error("GET ME ERROR:", error);
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message
         });

@@ -5,26 +5,17 @@ import tenantMiddleware from "../middlewares/tenantMiddleware.js";
 import roleMiddleware from "../middlewares/roleMiddleware.js";
 
 import {
-    createPayment,
-    verifyPayment
-} from "../controllers/PaymentController.js";
+    getSellerDashboard
+} from "../controllers/SellerDashboardController.js";
 
 const router = express.Router();
 
-router.post(
-    "/create",
+router.get(
+    "/",
     authMiddleware,
     tenantMiddleware,
-    roleMiddleware("customer"),
-    createPayment
-);
-
-router.post(
-    "/verify",
-    authMiddleware,
-    tenantMiddleware,
-    roleMiddleware("customer"),
-    verifyPayment
+    roleMiddleware("seller"),
+    getSellerDashboard
 );
 
 export default router;

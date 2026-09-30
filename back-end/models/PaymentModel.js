@@ -13,6 +13,11 @@ const paymentSchema = new mongoose.Schema(
             ref: "Order",
             required: true
         },
+        razorpayOrderId: {
+            type: String,
+            required: true,
+            unique: true
+        },
 
         transactionId: {
             type: String,

@@ -39,8 +39,11 @@ const reviewSchema = new mongoose.Schema(
 );
 
 reviewSchema.index(
-    { tenantId: 1, productId: 1 }
+    { tenantId: 1, productId: 1, customerId: 1 },
+    { unique: true }
 );
+
+reviewSchema.index({ tenantId: 1, productId: 1 });
 
 const Review = mongoose.model("Review", reviewSchema);
 
