@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { updateProduct } from "../../redux/vendorProductSlice";
+import { setProducts, upsertProduct } from "../../redux/vendorProductSlice";
+import { api } from "../../api/client";
 
 function Inventory() {
   const products = useSelector((state) => state.vendorProducts.products);
@@ -10,6 +11,8 @@ function Inventory() {
   const [stockDrafts, setStockDrafts] = useState({});
   const [filter, setFilter] = useState("all");
   const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState("");
   const lowStock = products.filter((product) => Number(product.stock) > 0 && Number(product.stock) <= 10).length;
   const outOfStock = products.filter((product) => Number(product.stock) === 0).length;
   const visible = useMemo(() => products.filter((product) => {
@@ -19,19 +22,17 @@ function Inventory() {
     return matchesSearch && matchesFilter;
   }), [products, search, filter]);
 
-  const saveStock = (product) => {
+  const saveStock = async (product) => {
     const value = Number(stockDrafts[product.id]);
-    if (!Number.isInteger(value) || value < 0) {
-      setNotice("Enter a whole number of zero or more.");
-      return;
-    }
-    dispatch(updateProduct({ ...product, stock: value }));
-    setStockDrafts((drafts) => {
-      const next = { ...drafts };
-      delete next[product.id];
-      return next;
-    });
-    setNotice(`${product.name} stock updated.`);
+    if (!Number.isInteger(value) || value < 0) { setNotice("Enter a whole number of zero or more."); return; }
+    setBusyId(product.id); setError("");
+    try {
+      const saved = await api.products.update(product.id, { ...product, stock: value, files: [] });
+      dispatch(upsertProduct(saved)); dispatch(setProducts(await api.products.list()));
+      setStockDrafts((drafts) => { const next = { ...drafts }; delete next[product.id]; return next; });
+      setNotice(`${product.name} stock updated on the server.`);
+    } catch (requestError) { setError(requestError.message); }
+    finally { setBusyId(""); }
   };
 
   return (
@@ -60,6 +61,7 @@ function Inventory() {
             </div>
           </div>
           {notice && <p role="status" className="border-b bg-green-50 px-5 py-3 text-sm text-green-800">{notice}</p>}
+          {error && <p role="alert" className="border-b bg-red-50 px-5 py-3 text-sm text-red-700">{error}</p>}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[680px] text-left text-sm">
               <thead className="bg-slate-50 text-slate-500"><tr><th className="px-5 py-3 font-medium">Product</th><th className="px-5 py-3 font-medium">Category</th><th className="px-5 py-3 font-medium">Current stock</th><th className="px-5 py-3 font-medium">Status</th><th className="px-5 py-3 font-medium">Update stock</th></tr></thead>
@@ -73,7 +75,7 @@ function Inventory() {
                     <td className="px-5 py-4 text-slate-600">{product.category}</td>
                     <td className="px-5 py-4 font-semibold">{stock}</td>
                     <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${stock === 0 ? "bg-red-50 text-red-700" : stock <= 10 ? "bg-amber-50 text-amber-700" : "bg-green-50 text-green-700"}`}>{status}</span></td>
-                    <td className="px-5 py-4"><div className="flex gap-2"><input aria-label={`New stock for ${product.name}`} type="number" min="0" step="1" value={draft} onChange={(event) => setStockDrafts((drafts) => ({ ...drafts, [product.id]: event.target.value }))} className="w-24 rounded-lg border px-3 py-2" /><button type="button" disabled={Number(draft) === stock || draft === ""} onClick={() => saveStock(product)} className="rounded-lg bg-slate-900 px-3 py-2 font-medium text-white enabled:hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Save</button></div></td>
+                    <td className="px-5 py-4"><div className="flex gap-2"><input aria-label={`New stock for ${product.name}`} type="number" min="0" step="1" value={draft} onChange={(event) => setStockDrafts((drafts) => ({ ...drafts, [product.id]: event.target.value }))} className="w-24 rounded-lg border px-3 py-2" /><button type="button" disabled={busyId === product.id || Number(draft) === stock || draft === ""} onClick={() => saveStock(product)} className="rounded-lg bg-slate-900 px-3 py-2 font-medium text-white enabled:hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Save</button></div></td>
                   </tr>;
                 })}
                 {visible.length === 0 && <tr><td colSpan="5" className="px-5 py-12 text-center text-slate-500">No inventory items match these filters.</td></tr>}
@@ -81,7 +83,7 @@ function Inventory() {
             </table>
           </div>
         </section>
-        <p className="mt-4 text-xs text-slate-500">Inventory changes are stored in this browser’s demo catalog.</p>
+        <p className="mt-4 text-xs text-slate-500">Inventory changes are saved to your backend store catalog.</p>
       </div>
     </main>
   );

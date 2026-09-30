@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
-import { deleteProduct } from "../../redux/vendorProductSlice";
+import { removeProduct, setProducts } from "../../redux/vendorProductSlice";
+import { api } from "../../api/client";
 
 function Products() {
   const dispatch = useDispatch();
@@ -15,6 +16,8 @@ function Products() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
   const [statusFilter, setStatusFilter] = useState("All Status");
+  const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState("");
 
   const productStatus = (product) => {
     if (Number(product.stock) === 0) return "Out of Stock";
@@ -36,14 +39,15 @@ function Products() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const handleDelete = (id) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this product?"
-    );
-
-    if (confirmed) {
-      dispatch(deleteProduct(id));
-    }
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this product from your store?")) return;
+    setBusyId(id); setError("");
+    try {
+      await api.products.remove(id);
+      dispatch(removeProduct(id));
+      dispatch(setProducts(await api.products.list()));
+    } catch (requestError) { setError(requestError.message); }
+    finally { setBusyId(""); }
   };
 
   const totalProducts = products.length;
@@ -76,7 +80,7 @@ function Products() {
               </h1>
 
               <p className="mt-3 text-gray-600">
-                Manage your store products and pricing.
+                Manage products saved in your backend store catalog.
               </p>
             </div>
 
@@ -92,6 +96,7 @@ function Products() {
 
       {/* Main */}
       <section className="mx-auto max-w-7xl px-6 py-10">
+        {error && <p role="alert" className="mb-5 rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</p>}
         {/* Stats */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
@@ -275,10 +280,9 @@ function Products() {
 
                         <button
                           type="button"
-                          onClick={() =>
-                            handleDelete(product.id)
-                          }
-                          className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-500 transition hover:bg-red-50"
+                          disabled={busyId === product.id}
+                          onClick={() => handleDelete(product.id)}
+                          className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-500 transition hover:bg-red-50 disabled:opacity-50"
                         >
                           Delete
                         </button>

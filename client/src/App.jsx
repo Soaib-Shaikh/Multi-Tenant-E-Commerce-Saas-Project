@@ -1,5 +1,6 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
+import ApiBootstrap from "./components/common/ApiBootstrap";
 import Navbar from "./components/common/Navbar";
 import Home from "./pages/customer/Home";
 import Products from "./pages/customer/Products";
@@ -20,6 +21,7 @@ import AdminOrders from "./pages/admin/Orders";
 import AdminProducts from "./pages/admin/Products";
 import VendorDashboard from "./pages/vendor/Dashboard";
 import VendorProducts from "./pages/vendor/Products";
+import VendorCategories from "./pages/vendor/Categories";
 import VendorOrders from "./pages/vendor/Orders";
 import VendorInventory from "./pages/vendor/Inventory";
 import VendorSettings from "./pages/vendor/Settings";
@@ -27,7 +29,8 @@ import AddProduct from "./pages/vendor/AddProduct";
 
 function ProtectedRoute({ roles, children }) {
   const user = useSelector((state) => state.auth.user);
-  if (!user) return <Navigate to="/login" replace />;
+  const location = useLocation();
+  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
   return children;
 }
@@ -35,17 +38,18 @@ function ProtectedRoute({ roles, children }) {
 function App() {
   return (
     <BrowserRouter>
+      <ApiBootstrap />
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/product/:id" element={<ProductDetails />} />
-        <Route path="/products/:id" element={<ProductDetails />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/order-success" element={<OrderSuccess />} />
-        <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-        <Route path="/orders/:id" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
+        <Route path="/products" element={<ProtectedRoute roles={["customer", "vendor"]}><Products /></ProtectedRoute>} />
+        <Route path="/product/:id" element={<ProtectedRoute roles={["customer", "vendor"]}><ProductDetails /></ProtectedRoute>} />
+        <Route path="/products/:id" element={<ProtectedRoute roles={["customer", "vendor"]}><ProductDetails /></ProtectedRoute>} />
+        <Route path="/cart" element={<ProtectedRoute roles={["customer"]}><Cart /></ProtectedRoute>} />
+        <Route path="/checkout" element={<ProtectedRoute roles={["customer"]}><Checkout /></ProtectedRoute>} />
+        <Route path="/order-success" element={<ProtectedRoute roles={["customer"]}><OrderSuccess /></ProtectedRoute>} />
+        <Route path="/orders" element={<ProtectedRoute roles={["customer"]}><Orders /></ProtectedRoute>} />
+        <Route path="/orders/:id" element={<ProtectedRoute roles={["customer"]}><OrderDetails /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Register />} />
@@ -60,6 +64,7 @@ function App() {
         <Route path="/vendor" element={<Navigate to="/vendor/dashboard" replace />} />
         <Route path="/vendor/dashboard" element={<ProtectedRoute roles={["vendor"]}><VendorDashboard /></ProtectedRoute>} />
         <Route path="/vendor/products" element={<ProtectedRoute roles={["vendor"]}><VendorProducts /></ProtectedRoute>} />
+        <Route path="/vendor/categories" element={<ProtectedRoute roles={["vendor"]}><VendorCategories /></ProtectedRoute>} />
         <Route path="/vendor/products/add" element={<ProtectedRoute roles={["vendor"]}><AddProduct /></ProtectedRoute>} />
         <Route path="/vendor/products/edit/:id" element={<ProtectedRoute roles={["vendor"]}><AddProduct /></ProtectedRoute>} />
         <Route path="/vendor/orders" element={<ProtectedRoute roles={["vendor"]}><VendorOrders /></ProtectedRoute>} />
