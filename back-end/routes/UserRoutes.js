@@ -1,28 +1,57 @@
 import express from "express";
-import { 
+
+import {
+    registerUser,
+    loginUser,
     getAllUsers,
-    getMe,
     getUserById,
-    loginUser, 
-    registerUser ,
+    getMe
 } from "../controllers/UserController.js";
+
 import authMiddleware from "../middlewares/authMiddleware.js";
 import roleMiddleware from "../middlewares/roleMiddleware.js";
 
 const router = express.Router();
 
-// Register a new user
-router.post("/register", registerUser)
+
+// Register User / Seller
+router.post(
+    "/register",
+    registerUser
+);
+
 
 // Login User
-router.post("/login", loginUser)
+router.post(
+    "/login",
+    loginUser
+);
 
-// Get me by login user
-router.get("/me", authMiddleware, getMe)
 
-// Get all users
-router.get("/", authMiddleware, roleMiddleware("super_admin"), getAllUsers)
+// Get logged-in user
+router.get(
+    "/me",
+    authMiddleware,
+    getMe
+);
 
-// Geet a single user by ID
-router.get("/:id", authMiddleware, roleMiddleware("super_admin"), getUserById)
+
+// Get all users - Super Admin
+router.get(
+    "/",
+    authMiddleware,
+    roleMiddleware("super_admin"),
+    getAllUsers
+);
+
+
+// Get single user - Super Admin
+router.get(
+    "/:id",
+    authMiddleware,
+    roleMiddleware("super_admin"),
+    getUserById
+);
+
+
 export default router;
