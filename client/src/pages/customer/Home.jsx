@@ -1,8 +1,6 @@
 import { Link } from "react-router-dom";
-
-import { products } from "../../data/products";
-
-const featuredProducts = products.slice(0, 4);
+import { useSelector } from "react-redux";
+import { products as sampleProducts } from "../../data/products";
 
 const categories = [
   {
@@ -28,6 +26,9 @@ const categories = [
 ];
 
 function Home() {
+  const user = useSelector((state) => state.auth.user);
+  const catalog = useSelector((state) => state.vendorProducts.products);
+  const featuredProducts = catalog.slice(0, 4);
   return (
     <main className="min-h-screen bg-gray-50">
 
@@ -78,31 +79,31 @@ function Home() {
 
               <div>
                 <p className="text-2xl font-bold">
-                  500+
+                  {catalog.length || "—"}
                 </p>
 
                 <p className="text-sm text-gray-500">
-                  Products
+                  Products in this store
                 </p>
               </div>
 
               <div>
                 <p className="text-2xl font-bold">
-                  50+
+                  {new Set(catalog.map((product) => product.category)).size || "—"}
                 </p>
 
                 <p className="text-sm text-gray-500">
-                  Categories
+                  Store categories
                 </p>
               </div>
 
               <div>
                 <p className="text-2xl font-bold">
-                  24/7
+                  100%
                 </p>
 
                 <p className="text-sm text-gray-500">
-                  Support
+                  Tenant-isolated
                 </p>
               </div>
 
@@ -116,11 +117,11 @@ function Home() {
             <div className="overflow-hidden rounded-3xl bg-orange-50 shadow-sm">
 
               <img
-                src={products[0].image}
-                alt={`${products[0].name} featured in the ShopSaaS store`}
+                src={sampleProducts[0].image}
+                alt={`${sampleProducts[0].name} featured in the ShopSaaS store`}
                 onError={(event) => {
                   event.currentTarget.onerror = null;
-                  event.currentTarget.src = products[2].image;
+                  event.currentTarget.src = sampleProducts[2].image;
                 }}
                 fetchPriority="high"
                 className="h-[430px] w-full object-cover transition duration-500 hover:scale-105"
@@ -239,7 +240,7 @@ function Home() {
 
           <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
 
-            {featuredProducts.map((product) => (
+            {featuredProducts.length ? featuredProducts.map((product) => (
               <Link
                 key={product.id}
                 to={`/products/${product.id}`}
@@ -283,7 +284,11 @@ function Home() {
                 </div>
 
               </Link>
-            ))}
+            )) : <div className="col-span-full rounded-2xl border border-dashed bg-slate-50 p-10 text-center">
+              <h3 className="text-lg font-semibold">{user ? "No products in this store yet" : "Sign in to browse your store"}</h3>
+              <p className="mt-2 text-sm text-slate-600">{user ? "Products added by your store will appear here." : "Store products are private to each tenant. Sign in with a store customer account to view its catalog."}</p>
+              {!user && <Link to="/login" className="mt-5 inline-block rounded-lg bg-orange-500 px-5 py-3 font-semibold text-white">Sign in</Link>}
+            </div>}
 
           </div>
 
@@ -344,7 +349,7 @@ function Home() {
 
       <footer className="border-t bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-8 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} ShopSaaS. A multi-store shopping demo.</p>
+          <p>© {new Date().getFullYear()} ShopSaaS. A multi-store shopping experience.</p>
           <div className="flex gap-5"><Link to="/products" className="hover:text-orange-600">Products</Link><Link to="/cart" className="hover:text-orange-600">Cart</Link><Link to="/profile" className="hover:text-orange-600">Account</Link></div>
         </div>
       </footer>

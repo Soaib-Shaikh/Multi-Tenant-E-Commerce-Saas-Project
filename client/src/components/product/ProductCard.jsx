@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { addToCart } from "../../redux/cartSlice";
+import { api } from "../../api/client";
+import { setCart } from "../../redux/cartSlice";
 
 function ProductCard({ product }) {
   const dispatch = useDispatch();
@@ -24,7 +25,7 @@ function ProductCard({ product }) {
         <div className="mt-3 flex items-center justify-between">
           <p className="text-lg font-bold">₹{product.price}</p>
 
-          <button onClick={() => dispatch(addToCart(product))} className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800">
+          <button onClick={async () => { try { dispatch(setCart(await api.cart.add(product.id))); } catch (error) { window.alert(error.message); } }} className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800">
             Add to Cart
           </button>
         </div>

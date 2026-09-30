@@ -24,10 +24,10 @@ function Navbar() {
         <div className={`${open ? "absolute left-0 right-0 top-full flex border-b bg-white p-4 shadow-lg" : "hidden"} flex-col gap-1 md:static md:flex md:flex-row md:items-center md:border-0 md:bg-transparent md:p-0 md:shadow-none`}>
           <NavLink to="/" className={linkClass} onClick={close}>Home</NavLink>
           <NavLink to="/products" className={linkClass} onClick={close}>Products</NavLink>
-          {user && <NavLink to="/orders" className={linkClass} onClick={close}>Orders</NavLink>}
+          {user?.role === "customer" && <NavLink to="/orders" className={linkClass} onClick={close}>Orders</NavLink>}
           {user?.role === "vendor" && <NavLink to="/vendor/dashboard" className={linkClass} onClick={close}>Vendor</NavLink>}
           {user?.role === "admin" && <NavLink to="/admin/dashboard" className={linkClass} onClick={close}>Admin</NavLink>}
-          <NavLink to="/cart" className={linkClass} onClick={close}>Cart <span className="ml-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-700">{count}</span></NavLink>
+          {user?.role === "customer" && <NavLink to="/cart" className={linkClass} onClick={close}>Cart <span className="ml-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-700">{count}</span></NavLink>}
           {user ? <><NavLink to="/profile" className={linkClass} onClick={close}>Profile</NavLink><button type="button" onClick={handleLogout} className="rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-600 hover:text-orange-600">Log out</button></> : <><NavLink to="/login" className={linkClass} onClick={close}>Login</NavLink><NavLink to="/signup" className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600" onClick={close}>Sign up</NavLink></>}
         </div>
       </nav>
