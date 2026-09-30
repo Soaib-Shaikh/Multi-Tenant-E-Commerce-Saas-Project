@@ -14,6 +14,7 @@ function Register() {
   const [subdomain, setSubdomain] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [createdTenantId, setCreatedTenantId] = useState("");
   const [loading, setLoading] = useState(false);
 
   const updateStoreName = (value) => {
@@ -27,6 +28,7 @@ function Register() {
     event.preventDefault();
     setError("");
     setSuccess("");
+    setCreatedTenantId("");
     if (password !== confirmPassword) return setError("Passwords do not match.");
     if (password.length < 8) return setError("Password must be at least 8 characters.");
     const payload = { name: name.trim(), email: email.trim(), password, role: role === "vendor" ? "seller" : "customer" };
@@ -41,6 +43,7 @@ function Register() {
     try {
       const result = await api.auth.register(payload);
       setSuccess(role === "vendor" ? `${result.message} You can sign in after an administrator approves your store.` : `${result.message} Sign in to continue.`);
+      setCreatedTenantId(result.tenant?._id || "");
       setPassword("");
       setConfirmPassword("");
     } catch (requestError) {
@@ -55,7 +58,7 @@ function Register() {
       <div className="w-full max-w-md rounded-2xl border bg-white p-8 shadow-sm">
         <div className="text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-orange-500 text-2xl text-white">🛍</div><h1 className="mt-5 text-3xl font-bold">Create Account</h1><p className="mt-2 text-gray-500">Join ShopSaaS today</p></div>
         {error && <div role="alert" className="mt-6 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-        {success && <div role="status" className="mt-6 rounded-lg bg-green-50 p-3 text-sm text-green-800">{success} <Link to="/login" className="ml-1 font-semibold underline">Go to login</Link></div>}
+        {success && <div role="status" className="mt-6 rounded-lg bg-green-50 p-3 text-sm text-green-800">{success} <Link to="/login" className="ml-1 font-semibold underline">Go to login</Link>{createdTenantId && <div className="mt-3 border-t border-green-200 pt-3"><p className="font-semibold">Store tenant ID</p><code className="mt-1 block break-all rounded bg-white p-2 text-xs">{createdTenantId}</code><p className="mt-2 text-xs">After approval, customers can use this ID to join your store.</p></div>}</div>}
         <form onSubmit={handleRegister} className="mt-8 space-y-5">
           <label className="block text-sm font-medium">Full name<input required autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} className="mt-2 w-full rounded-lg border px-4 py-3" /></label>
           <label className="block text-sm font-medium">Email<input type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 w-full rounded-lg border px-4 py-3" /></label>
