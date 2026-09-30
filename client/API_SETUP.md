@@ -2,7 +2,7 @@
 
 The frontend reads its API settings from Vite environment variables. Copy `.env.example` to `.env.local` and set:
 
-- `VITE_API_BASE_URL`: the backend API base URL, including `/api` (for example `http://localhost:5000/api`). The server code defaults to port `3000`, so use the port your backend is actually listening on.
+- `VITE_API_BASE_URL`: the backend API base URL, including `/api` (for example `http://localhost:3000/api`). The server code defaults to port `3000`, so use the port your backend is actually listening on.
 - `VITE_TENANT_ID`: an active store tenant ID for customer registration. Customer and seller product routes are tenant-scoped; the backend does not expose a public tenant directory.
 - `VITE_RAZORPAY_KEY_ID`: optional public key ID if the payment API response does not include one. Never add `RAZORPAY_KEY_SECRET`, `JWT_SECRET`, `MONGODB_URL`, or Cloudinary secrets to this frontend file.
 
