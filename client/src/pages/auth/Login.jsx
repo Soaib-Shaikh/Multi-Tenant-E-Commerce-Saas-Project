@@ -38,6 +38,7 @@ function Login() {
         <form onSubmit={handleLogin} className="mt-8 space-y-5">
           <label className="block text-sm font-medium">Email<input type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" className="mt-2 w-full rounded-lg border px-4 py-3 outline-none focus:border-orange-500" /></label>
           <label className="block text-sm font-medium">Password<input type="password" required autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" className="mt-2 w-full rounded-lg border px-4 py-3 outline-none focus:border-orange-500" /></label>
+          <p className="-mt-3 text-right text-sm"><Link to="/forgot-password" className="font-semibold text-orange-500 hover:underline">Forgot password?</Link></p>
           <button type="submit" disabled={loading} className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-white transition hover:bg-orange-600 disabled:opacity-60">{loading ? "Signing in…" : "Login"}</button>
         </form>
         <p className="mt-6 text-center text-sm text-gray-500">Don’t have an account? <Link to="/signup" className="font-semibold text-orange-500 hover:underline">Create Account</Link></p>
