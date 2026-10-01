@@ -13,3 +13,7 @@ Restart Vite after changing environment variables. Sign in with an existing back
 The frontend now uses the backend for authentication, products and categories, seller product and category CRUD plus inventory, customer carts and orders, Razorpay payments, product reviews, seller/admin dashboards, user listing, tenant listing, and tenant approval/deactivation.
 
 The backend currently does not expose seller order status updates, admin-wide order or product management, or profile/store settings updates. Those screens state this limitation instead of showing demo records as live data.
+
+## Password reset API needed
+
+The client now includes `/forgot-password` and `/reset-password` screens. To enable submissions, the backend must add `POST /api/auth/forgot-password` accepting `{ "email": "..." }` and `POST /api/auth/reset-password` accepting `{ "token": "...", "newPassword": "..." }`. The forgot-password endpoint should email a time-limited reset link to `/reset-password?token=...`; store only a hashed, expiring reset token on the backend.

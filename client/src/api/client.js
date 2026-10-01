@@ -88,6 +88,8 @@ export const api = {
   auth: {
     login: (data) => request("/auth/login", { method: "POST", body: json(data) }),
     register: (data) => request("/auth/register", { method: "POST", body: json(data) }),
+    forgotPassword: (data) => request("/auth/forgot-password", { method: "POST", body: json(data) }),
+    resetPassword: (data) => request("/auth/reset-password", { method: "POST", body: json(data) }),
     me: () => request("/auth/me"),
     users: () => request("/auth/"),
   },
