@@ -1,5 +1,5 @@
 import Category from "../models/CategoryModel.js";
-import { uploadToCloudinary } from "../services/cloudinaryService.js";
+import { uploadToCloudinary } from "../services/CloudinaryService.js";
 
 // Create Category
 export const createCategory = async (req, res) => {

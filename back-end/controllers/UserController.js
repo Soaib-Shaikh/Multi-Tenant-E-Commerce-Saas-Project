@@ -1,8 +1,10 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
+import crypto from "crypto";
+import { sendEmail } from "../services/EmailService.js";
 import User from "../models/UserModel.js";
 import Tenant from "../models/TenantModel.js";
+
 
 // Register User
 export const registerUser = async (req, res) => {
@@ -343,6 +345,226 @@ export const loginUser = async (req, res) => {
     }
 };
 
+// Forgot Password
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Please provide your email."
+            });
+        }
+
+        const user = await User.findOne({
+            email: email.toLowerCase()
+        });
+
+        // Security: don't reveal whether email exists
+        if (!user) {
+            return res.status(200).json({
+                success: true,
+                message:
+                    "If an account exists with this email, a password reset link has been sent."
+            });
+        }
+
+        // Generate reset token
+        const resetToken = crypto.randomBytes(32).toString("hex");
+
+        // Save token and expiry (15 minutes)
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = new Date(
+            Date.now() + 15 * 60 * 1000
+        );
+
+        await user.save();
+
+        // Frontend reset password URL
+        const resetUrl =
+            `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+        // Send email
+        await sendEmail({
+            to: user.email,
+            subject: "Reset Your Password - E-Commerce SaaS",
+            html: `
+                <div style="font-family: Arial, sans-serif;">
+                    <h2>Password Reset Request</h2>
+
+                    <p>Hello ${user.name},</p>
+
+                    <p>
+                        We received a request to reset your password.
+                    </p>
+
+                    <p>
+                        Click the button below to create a new password:
+                    </p>
+
+                    <a
+                        href="${resetUrl}"
+                        style="
+                            display:inline-block;
+                            padding:12px 20px;
+                            background:#2563eb;
+                            color:white;
+                            text-decoration:none;
+                            border-radius:6px;
+                        "
+                    >
+                        Reset Password
+                    </a>
+
+                    <p>
+                        This link will expire in 15 minutes.
+                    </p>
+
+                    <p>
+                        If you did not request this, you can safely ignore this email.
+                    </p>
+
+                    <p>
+                        Regards,<br>
+                        E-Commerce SaaS Team
+                    </p>
+                </div>
+            `
+        });
+
+        return res.status(200).json({
+            success: true,
+            message:
+                "If an account exists with this email, a password reset link has been sent."
+        });
+
+    } catch (error) {
+        console.error("FORGOT PASSWORD ERROR:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong. Please try again later."
+        });
+    }
+};
+
+// Reset Password
+export const resetPassword = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { password } = req.body;
+
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                message: "Reset token is required."
+            });
+        }
+
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                message: "Please provide a new password."
+            });
+        }
+
+        // Same password validation as registration
+        if (password.length < 8) {
+            return res.status(400).json({
+                success: false,
+                message: "Password must be at least 8 characters."
+            });
+        }
+
+        const hasUppercase = [...password].some(
+            (char) => char >= "A" && char <= "Z"
+        );
+
+        const hasLowercase = [...password].some(
+            (char) => char >= "a" && char <= "z"
+        );
+
+        const hasNumber = [...password].some(
+            (char) => char >= "0" && char <= "9"
+        );
+
+        const specialCharacters = "@$!%*?&";
+
+        const hasSpecialCharacter = [...password].some(
+            (char) => specialCharacters.includes(char)
+        );
+
+        if (!hasUppercase) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Password must contain at least one uppercase letter."
+            });
+        }
+
+        if (!hasLowercase) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Password must contain at least one lowercase letter."
+            });
+        }
+
+        if (!hasNumber) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Password must contain at least one number."
+            });
+        }
+
+        if (!hasSpecialCharacter) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Password must contain at least one special character."
+            });
+        }
+
+        // Find user with valid token
+        const user = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: new Date() }
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or expired reset token."
+            });
+        }
+
+        // Hash new password
+        const hashPassword = await bcrypt.hash(password, 10);
+
+        user.password = hashPassword;
+
+        // Clear reset token
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Password reset successfully. You can now login."
+        });
+
+    } catch (error) {
+        console.error("RESET PASSWORD ERROR:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong. Please try again later."
+        });
+    }
+};
 
 // Get all users - Super Admin
 export const getAllUsers = async (req, res) => {
