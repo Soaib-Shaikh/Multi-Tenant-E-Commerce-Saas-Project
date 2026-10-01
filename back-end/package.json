@@ -23,7 +23,8 @@
     "multer": "^2.3.0",
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^10.0.9",
-    "razorpay": "^2.9.8"
+    "razorpay": "^2.9.8",
+    "resend": "^6.31.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

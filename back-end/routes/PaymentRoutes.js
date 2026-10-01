@@ -6,11 +6,14 @@ import roleMiddleware from "../middlewares/roleMiddleware.js";
 
 import {
     createPayment,
+    refundPayment,
     verifyPayment
 } from "../controllers/PaymentController.js";
 
 const router = express.Router();
 
+
+// Customer - Create Payment
 router.post(
     "/create",
     authMiddleware,
@@ -19,12 +22,24 @@ router.post(
     createPayment
 );
 
+
+// Customer - Verify Payment
 router.post(
     "/verify",
     authMiddleware,
     tenantMiddleware,
     roleMiddleware("customer"),
     verifyPayment
+);
+
+
+// Seller - Approve Refund
+router.post(
+    "/refund/:orderId",
+    authMiddleware,
+    tenantMiddleware,
+    roleMiddleware("seller"),
+    refundPayment
 );
 
 export default router;

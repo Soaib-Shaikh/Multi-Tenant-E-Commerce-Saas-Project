@@ -14,6 +14,7 @@ import paymentRoutes from "./routes/PaymentRoutes.js";
 import reviewRoutes from "./routes/ReviewRoutes.js";
 import sellerDashboardRoutes from "./routes/SellerDashboardRoutes.js";
 import adminDashboardRoutes from "./routes/AdminDashboardRoutes.js";
+import couponRoutes from "./routes/CouponRoutes.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -31,6 +32,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/seller/dashboard", sellerDashboardRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
+app.use("/api/coupons", couponRoutes)
 
 app.listen(port, () => {
     console.log(`Server is running on : http://localhost:${port}`);

@@ -5,7 +5,9 @@ import {
     loginUser,
     getAllUsers,
     getUserById,
-    getMe
+    getMe,
+    forgotPassword,
+    resetPassword
 } from "../controllers/UserController.js";
 
 import authMiddleware from "../middlewares/authMiddleware.js";
@@ -53,5 +55,16 @@ router.get(
     getUserById
 );
 
+// Forgot Password
+router.post(
+    "/forgot-password",
+    forgotPassword
+);
+
+// Reset Password
+router.post(
+    "/reset-password/:token",
+    resetPassword
+);
 
 export default router;

@@ -68,7 +68,8 @@ const orderSchema = new mongoose.Schema(
                 "processing",
                 "shipped",
                 "delivered",
-                "cancelled"
+                "cancelled",
+                "returned"
             ],
             default: "pending"
         },
@@ -80,6 +81,37 @@ const orderSchema = new mongoose.Schema(
             city: String,
             state: String,
             pincode: String
+        },
+
+        // Customer cancellation request
+        cancelRequested: {
+            type: Boolean,
+            default: false
+        },
+
+        // Customer return request
+        returnRequested: {
+            type: Boolean,
+            default: false
+        },
+
+        // Reason for cancellation / return
+        returnReason: {
+            type: String,
+            default: ""
+        },
+
+        // Refund status
+        refundStatus: {
+            type: String,
+            enum: [
+                "not_requested",
+                "requested",
+                "approved",
+                "rejected",
+                "refunded"
+            ],
+            default: "not_requested"
         }
     },
     {

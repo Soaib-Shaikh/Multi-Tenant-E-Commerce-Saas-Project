@@ -1,9 +1,15 @@
 import crypto from "crypto";
+
 import razorpay from "../configs/razorpay.js";
+
 import Payment from "../models/PaymentModel.js";
 import Order from "../models/OrderModel.js";
 import Product from "../models/ProductModel.js";
 import Cart from "../models/CartModel.js";
+import User from "../models/UserModel.js";
+
+import { sendEmail } from "../services/EmailService.js";
+
 
 // Create Payment
 export const createPayment = async (req, res) => {
@@ -77,6 +83,7 @@ export const createPayment = async (req, res) => {
         return res.status(201).json({
             success: true,
             message: "Payment order created successfully.",
+
             payment: {
                 _id: payment._id,
                 orderId: payment.orderId,
@@ -85,11 +92,13 @@ export const createPayment = async (req, res) => {
                 status: payment.status,
                 paymentMethod: payment.paymentMethod
             },
+
             razorpayOrder: {
                 id: razorpayOrder.id,
                 amount: razorpayOrder.amount,
                 currency: razorpayOrder.currency
             },
+
             keyId: process.env.RAZORPAY_KEY_ID
         });
 
@@ -102,6 +111,7 @@ export const createPayment = async (req, res) => {
         });
     }
 };
+
 
 // Verify Payment
 export const verifyPayment = async (req, res) => {
@@ -176,6 +186,7 @@ export const verifyPayment = async (req, res) => {
 
         if (generatedSignature !== razorpay_signature) {
             payment.status = "failed";
+
             await payment.save();
 
             return res.status(400).json({
@@ -229,9 +240,145 @@ export const verifyPayment = async (req, res) => {
 
         // Update order
         order.status = "confirmed";
+
         await order.save();
 
-        // Remove ordered products from cart
+
+        // =====================================================
+        // SEND ORDER CONFIRMATION EMAIL
+        // =====================================================
+
+        try {
+            const user = await User.findById(req.user.userId);
+
+            if (user) {
+                await sendEmail({
+                    to: user.email,
+
+                    subject:
+                        "Order Confirmed - E-Commerce SaaS",
+
+                    html: `
+                        <div
+                            style="
+                                font-family: Arial, sans-serif;
+                                max-width: 600px;
+                                margin: 0 auto;
+                                padding: 20px;
+                                color: #333;
+                            "
+                        >
+
+                            <h2 style="color: #16a34a;">
+                                Order Confirmed 🎉
+                            </h2>
+
+                            <p>
+                                Hello <strong>${user.name}</strong>,
+                            </p>
+
+                            <p>
+                                Your payment was successful and your
+                                order has been confirmed.
+                            </p>
+
+                            <hr />
+
+                            <h3>Order Details</h3>
+
+                            <p>
+                                <strong>Order ID:</strong>
+                                ${order._id}
+                            </p>
+
+                            <p>
+                                <strong>Payment ID:</strong>
+                                ${razorpay_payment_id}
+                            </p>
+
+                            <p>
+                                <strong>Total Amount:</strong>
+                                ₹${order.totalAmount}
+                            </p>
+
+                            <hr />
+
+                            <h3>Ordered Items</h3>
+
+                            <ul>
+                                ${order.items
+                                    .map(
+                                        (item) => `
+                                            <li style="margin-bottom: 8px;">
+                                                <strong>
+                                                    ${item.name}
+                                                </strong>
+                                                × ${item.quantity}
+                                                — ₹${item.price * item.quantity}
+                                            </li>
+                                        `
+                                    )
+                                    .join("")}
+                            </ul>
+
+                            <hr />
+
+                            <h3>Shipping Address</h3>
+
+                            <p>
+                                <strong>
+                                    ${order.shippingAddress.name}
+                                </strong>
+                                <br />
+
+                                ${order.shippingAddress.address}
+                                <br />
+
+                                ${order.shippingAddress.city},
+                                ${order.shippingAddress.state}
+                                -
+                                ${order.shippingAddress.pincode}
+                                <br />
+
+                                Phone:
+                                ${order.shippingAddress.phone}
+                            </p>
+
+                            <hr />
+
+                            <p>
+                                Thank you for shopping with us! ❤️
+                            </p>
+
+                            <p>
+                                <strong>
+                                    E-Commerce SaaS Team
+                                </strong>
+                            </p>
+
+                        </div>
+                    `
+                });
+
+                console.log(
+                    "ORDER CONFIRMATION EMAIL SENT:",
+                    user.email
+                );
+            }
+
+        } catch (emailError) {
+            // Email failure should NOT affect successful payment
+            console.error(
+                "ORDER CONFIRMATION EMAIL ERROR:",
+                emailError.message
+            );
+        }
+
+
+        // =====================================================
+        // REMOVE ORDERED PRODUCTS FROM CART
+        // =====================================================
+
         const cart = await Cart.findOne({
             tenantId: req.tenantId,
             customerId: req.user.userId
@@ -269,15 +416,208 @@ export const verifyPayment = async (req, res) => {
             await cart.save();
         }
 
+
         return res.status(200).json({
             success: true,
-            message: "Payment verified successfully. Order confirmed.",
+            message:
+                "Payment verified successfully. Order confirmed.",
             payment,
             order
         });
 
     } catch (error) {
         console.error("VERIFY PAYMENT ERROR:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// REFUND PAYMENT - SELLER
+
+export const refundPayment = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+
+        // Find order inside current tenant
+        const order = await Order.findOne({
+            _id: orderId,
+            tenantId: req.tenantId
+        });
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found."
+            });
+        }
+
+        // Refund request must exist
+        if (
+            !order.cancelRequested &&
+            !order.returnRequested
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "No cancellation or return request found."
+            });
+        }
+
+        // Refund already completed
+        if (order.refundStatus === "refunded") {
+            return res.status(400).json({
+                success: false,
+                message: "Payment is already refunded."
+            });
+        }
+
+        // Find successful payment
+        const payment = await Payment.findOne({
+            orderId: order._id,
+            tenantId: req.tenantId,
+            status: "success"
+        });
+
+        if (!payment) {
+            return res.status(400).json({
+                success: false,
+                message: "Successful payment not found for this order."
+            });
+        }
+
+        // Mark refund as approved
+        order.refundStatus = "approved";
+        await order.save();
+
+        // Razorpay refund
+        const refund = await razorpay.payments.refund(
+            payment.transactionId
+        );
+
+        // Update payment
+        payment.status = "refunded";
+
+        await payment.save();
+
+        // Update order status
+        if (order.returnRequested) {
+            order.status = "returned";
+        } else {
+            order.status = "cancelled";
+        }
+
+        order.refundStatus = "refunded";
+
+        await order.save();
+
+        // Find customer
+        const user = await User.findById(order.customerId);
+
+        // Send refund email
+        if (user) {
+            try {
+                const requestType = order.returnRequested
+                    ? "return"
+                    : "cancellation";
+
+                await sendEmail({
+                    to: user.email,
+
+                    subject:
+                        "Order Refund Successful - E-Commerce SaaS",
+
+                    html: `
+                        <div
+                            style="
+                                font-family: Arial, sans-serif;
+                                max-width: 600px;
+                                margin: auto;
+                                padding: 20px;
+                                color: #333;
+                            "
+                        >
+
+                            <h2>
+                                Refund Successful
+                            </h2>
+
+                            <p>
+                                Hello <strong>${user.name}</strong>,
+                            </p>
+
+                            <p>
+                                Your ${requestType} request for order
+                                <strong>${order._id}</strong>
+                                has been approved.
+                            </p>
+
+                            <hr />
+
+                            <p>
+                                <strong>Order ID:</strong>
+                                ${order._id}
+                            </p>
+
+                            <p>
+                                <strong>Refund Amount:</strong>
+                                ₹${payment.amount}
+                            </p>
+
+                            <p>
+                                <strong>Refund ID:</strong>
+                                ${refund.id}
+                            </p>
+
+                            <p>
+                                The refunded amount will be credited
+                                according to the payment provider/bank
+                                processing time.
+                            </p>
+
+                            <hr />
+
+                            <p>
+                                Thank you for shopping with us.
+                            </p>
+
+                            <p>
+                                <strong>
+                                    E-Commerce SaaS Team
+                                </strong>
+                            </p>
+
+                        </div>
+                    `
+                });
+
+                console.log(
+                    "REFUND EMAIL SENT:",
+                    user.email
+                );
+
+            } catch (emailError) {
+                console.error(
+                    "REFUND EMAIL ERROR:",
+                    emailError.message
+                );
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Refund processed successfully.",
+            refundId: refund.id,
+            refundAmount: payment.amount,
+            order
+        });
+
+    } catch (error) {
+        console.error(
+            "REFUND PAYMENT ERROR:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
