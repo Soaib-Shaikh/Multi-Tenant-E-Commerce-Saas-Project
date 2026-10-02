@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client";
 
 function ResetPassword() {
+  const { token: pathToken } = useParams();
   const [searchParams] = useSearchParams();
-  const [token, setToken] = useState(searchParams.get("token") || "");
+  const routeToken = pathToken || searchParams.get("token") || "";
+  const [token, setToken] = useState(routeToken);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -17,16 +19,17 @@ function ResetPassword() {
     setNotice("");
     if (password !== confirmPassword) return setError("Passwords do not match.");
     if (password.length < 8) return setError("Password must be at least 8 characters.");
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[@$!%*?&]/.test(password)) return setError("Include uppercase and lowercase letters, a number, and one of @$!%*?&.");
 
     setLoading(true);
     try {
-      const result = await api.auth.resetPassword({ token: token.trim(), newPassword: password });
+      const result = await api.auth.resetPassword(token.trim(), { password });
       setNotice(result.message || "Your password has been reset. You can sign in now.");
       setPassword("");
       setConfirmPassword("");
     } catch (requestError) {
       setError(requestError.status === 404
-        ? "Password reset is not available yet. The backend needs the reset-password endpoint."
+        ? "The reset endpoint was not found. Check that the latest backend is running and VITE_API_BASE_URL points to it."
         : requestError.message || "Could not reset your password.");
     } finally {
       setLoading(false);
@@ -40,7 +43,7 @@ function ResetPassword() {
         {error && <div role="alert" className="mt-6 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
         {notice && <div role="status" className="mt-6 rounded-lg bg-green-50 p-3 text-sm text-green-800">{notice} <Link to="/login" className="ml-1 font-semibold underline">Go to login</Link></div>}
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          {!searchParams.get("token") && <label className="block text-sm font-medium">Reset token<input required value={token} onChange={(event) => setToken(event.target.value)} className="mt-2 w-full rounded-lg border px-4 py-3 outline-none focus:border-orange-500" /></label>}
+          {!routeToken && <label className="block text-sm font-medium">Reset token<input required value={token} onChange={(event) => setToken(event.target.value)} className="mt-2 w-full rounded-lg border px-4 py-3 outline-none focus:border-orange-500" /></label>}
           <label className="block text-sm font-medium">New password<input type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 w-full rounded-lg border px-4 py-3 outline-none focus:border-orange-500" /><span className="mt-1 block text-xs font-normal text-slate-500">Use at least 8 characters, including uppercase and lowercase letters, a number, and one of @$!%*?&amp;.</span></label>
           <label className="block text-sm font-medium">Confirm new password<input type="password" required minLength={8} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="mt-2 w-full rounded-lg border px-4 py-3 outline-none focus:border-orange-500" /></label>
           <button type="submit" disabled={loading} className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-white transition hover:bg-orange-600 disabled:opacity-60">{loading ? "Resetting…" : "Reset password"}</button>

@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-route
 import { useSelector } from "react-redux";
 import ApiBootstrap from "./components/common/ApiBootstrap";
 import Navbar from "./components/common/Navbar";
+import WorkspaceLayout from "./components/common/WorkspaceLayout";
 import Home from "./pages/customer/Home";
 import Products from "./pages/customer/Products";
 import ProductDetails from "./pages/customer/ProductDetails";
@@ -24,6 +25,7 @@ import AdminProducts from "./pages/admin/Products";
 import VendorDashboard from "./pages/vendor/Dashboard";
 import VendorProducts from "./pages/vendor/Products";
 import VendorCategories from "./pages/vendor/Categories";
+import VendorCoupons from "./pages/vendor/Coupons";
 import VendorOrders from "./pages/vendor/Orders";
 import VendorInventory from "./pages/vendor/Inventory";
 import VendorSettings from "./pages/vendor/Settings";
@@ -44,9 +46,9 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/products" element={<ProtectedRoute roles={["customer", "vendor"]}><Products /></ProtectedRoute>} />
-        <Route path="/product/:id" element={<ProtectedRoute roles={["customer", "vendor"]}><ProductDetails /></ProtectedRoute>} />
-        <Route path="/products/:id" element={<ProtectedRoute roles={["customer", "vendor"]}><ProductDetails /></ProtectedRoute>} />
+        <Route path="/products" element={<Products />} />
+        <Route path="/product/:id" element={<ProductDetails />} />
+        <Route path="/products/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<ProtectedRoute roles={["customer"]}><Cart /></ProtectedRoute>} />
         <Route path="/checkout" element={<ProtectedRoute roles={["customer"]}><Checkout /></ProtectedRoute>} />
         <Route path="/order-success" element={<ProtectedRoute roles={["customer"]}><OrderSuccess /></ProtectedRoute>} />
@@ -57,23 +59,25 @@ function App() {
         <Route path="/signup" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/register" element={<Navigate to="/signup" replace />} />
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="/admin/dashboard" element={<ProtectedRoute roles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
-        <Route path="/admin/users" element={<ProtectedRoute roles={["admin"]}><AdminUsers /></ProtectedRoute>} />
-        <Route path="/admin/vendors" element={<ProtectedRoute roles={["admin"]}><AdminVendors /></ProtectedRoute>} />
-        <Route path="/admin/customers" element={<ProtectedRoute roles={["admin"]}><AdminCustomers /></ProtectedRoute>} />
-        <Route path="/admin/products" element={<ProtectedRoute roles={["admin"]}><AdminProducts /></ProtectedRoute>} />
-        <Route path="/admin/orders" element={<ProtectedRoute roles={["admin"]}><AdminOrders /></ProtectedRoute>} />
+        <Route path="/admin/dashboard" element={<ProtectedRoute roles={["admin"]}><WorkspaceLayout role="admin"><AdminDashboard /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/admin/users" element={<ProtectedRoute roles={["admin"]}><WorkspaceLayout role="admin"><AdminUsers /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/admin/vendors" element={<ProtectedRoute roles={["admin"]}><WorkspaceLayout role="admin"><AdminVendors /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/admin/customers" element={<ProtectedRoute roles={["admin"]}><WorkspaceLayout role="admin"><AdminCustomers /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/admin/products" element={<ProtectedRoute roles={["admin"]}><WorkspaceLayout role="admin"><AdminProducts /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/admin/orders" element={<ProtectedRoute roles={["admin"]}><WorkspaceLayout role="admin"><AdminOrders /></WorkspaceLayout></ProtectedRoute>} />
         <Route path="/vendor" element={<Navigate to="/vendor/dashboard" replace />} />
-        <Route path="/vendor/dashboard" element={<ProtectedRoute roles={["vendor"]}><VendorDashboard /></ProtectedRoute>} />
-        <Route path="/vendor/products" element={<ProtectedRoute roles={["vendor"]}><VendorProducts /></ProtectedRoute>} />
-        <Route path="/vendor/categories" element={<ProtectedRoute roles={["vendor"]}><VendorCategories /></ProtectedRoute>} />
-        <Route path="/vendor/products/add" element={<ProtectedRoute roles={["vendor"]}><AddProduct /></ProtectedRoute>} />
-        <Route path="/vendor/products/edit/:id" element={<ProtectedRoute roles={["vendor"]}><AddProduct /></ProtectedRoute>} />
-        <Route path="/vendor/orders" element={<ProtectedRoute roles={["vendor"]}><VendorOrders /></ProtectedRoute>} />
-        <Route path="/vendor/inventory" element={<ProtectedRoute roles={["vendor"]}><VendorInventory /></ProtectedRoute>} />
-        <Route path="/vendor/settings" element={<ProtectedRoute roles={["vendor"]}><VendorSettings /></ProtectedRoute>} />
+        <Route path="/vendor/dashboard" element={<ProtectedRoute roles={["vendor"]}><WorkspaceLayout role="vendor"><VendorDashboard /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/vendor/products" element={<ProtectedRoute roles={["vendor"]}><WorkspaceLayout role="vendor"><VendorProducts /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/vendor/categories" element={<ProtectedRoute roles={["vendor"]}><WorkspaceLayout role="vendor"><VendorCategories /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/vendor/coupons" element={<ProtectedRoute roles={["vendor"]}><WorkspaceLayout role="vendor"><VendorCoupons /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/vendor/products/add" element={<ProtectedRoute roles={["vendor"]}><WorkspaceLayout role="vendor"><AddProduct /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/vendor/products/edit/:id" element={<ProtectedRoute roles={["vendor"]}><WorkspaceLayout role="vendor"><AddProduct /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/vendor/orders" element={<ProtectedRoute roles={["vendor"]}><WorkspaceLayout role="vendor"><VendorOrders /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/vendor/inventory" element={<ProtectedRoute roles={["vendor"]}><WorkspaceLayout role="vendor"><VendorInventory /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/vendor/settings" element={<ProtectedRoute roles={["vendor"]}><WorkspaceLayout role="vendor"><VendorSettings /></WorkspaceLayout></ProtectedRoute>} />
         <Route path="*" element={<main className="mx-auto max-w-4xl px-6 py-24 text-center"><h1 className="text-3xl font-bold">Page not found</h1><p className="mt-3 text-gray-600">The page you requested does not exist.</p></main>} />
       </Routes>
     </BrowserRouter>

@@ -64,7 +64,7 @@ export const normalizeOrder = (order) => ({
   total: Number(order?.totalAmount ?? order?.total ?? 0),
   date: order?.createdAt ? new Date(order.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : order?.date || "—",
   paymentMethod: order?.paymentMethod || (order?.status === "pending" ? "Razorpay pending" : "Razorpay"),
-  status: ({ pending: "Pending payment", confirmed: "Confirmed", shipped: "Shipped", delivered: "Delivered", cancelled: "Cancelled" })[order?.status] || order?.status || "Pending",
+  status: ({ pending: "Pending payment", confirmed: "Confirmed", processing: "Processing", shipped: "Shipped", delivered: "Delivered", cancelled: "Cancelled", returned: "Returned" })[order?.status] || order?.status || "Pending",
   items: (order?.items || []).map((item, index) => ({
     ...item,
     id: item?._id || item?.productId?._id || item?.productId || index,
@@ -89,7 +89,7 @@ export const api = {
     login: (data) => request("/auth/login", { method: "POST", body: json(data) }),
     register: (data) => request("/auth/register", { method: "POST", body: json(data) }),
     forgotPassword: (data) => request("/auth/forgot-password", { method: "POST", body: json(data) }),
-    resetPassword: (data) => request("/auth/reset-password", { method: "POST", body: json(data) }),
+    resetPassword: (token, data) => request(`/auth/reset-password/${encodeURIComponent(token)}`, { method: "POST", body: json(data) }),
     me: () => request("/auth/me"),
     users: () => request("/auth/"),
   },
@@ -107,6 +107,16 @@ export const api = {
   products: {
     list: async () => ((await request("/products")).products || []).map(normalizeProduct),
     get: async (id) => normalizeProduct((await request(`/products/${encodeURIComponent(id)}`)).product),
+    publicList: async () => {
+      if (!TENANT_ID) throw new ApiError("Public catalog is not configured. Set VITE_TENANT_ID to the active store ID.", 0);
+      const query = new URLSearchParams({ tenantId: TENANT_ID });
+      return ((await request(`/public/catalog/products?${query}`)).products || []).map(normalizeProduct);
+    },
+    publicGet: async (id) => {
+      if (!TENANT_ID) throw new ApiError("Public catalog is not configured. Set VITE_TENANT_ID to the active store ID.", 0);
+      const query = new URLSearchParams({ tenantId: TENANT_ID });
+      return normalizeProduct((await request(`/public/catalog/products/${encodeURIComponent(id)}?${query}`)).product);
+    },
     create: async (data) => {
       const form = new FormData();
       ["categoryId", "name", "description", "price", "stock"].forEach((key) => form.append(key, data[key] ?? ""));
@@ -132,10 +142,21 @@ export const api = {
     list: async () => ((await request("/orders")).orders || []).map(normalizeOrder),
     get: async (id) => normalizeOrder((await request(`/orders/${encodeURIComponent(id)}`)).order),
     create: async (shippingAddress) => normalizeOrder((await request("/orders", { method: "POST", body: json({ shippingAddress }) })).order),
+    requestCancellation: async (id, reason) => normalizeOrder((await request(`/orders/${encodeURIComponent(id)}/cancel-request`, { method: "PATCH", body: json({ reason }) })).order),
+    requestReturn: async (id, reason) => normalizeOrder((await request(`/orders/${encodeURIComponent(id)}/return-request`, { method: "PATCH", body: json({ reason }) })).order),
+    updateStatus: async (id, status) => normalizeOrder((await request(`/orders/${encodeURIComponent(id)}/status`, { method: "PATCH", body: json({ status }) })).order),
   },
   payments: {
     create: (orderId) => request("/payments/create", { method: "POST", body: json({ orderId }) }),
     verify: (data) => request("/payments/verify", { method: "POST", body: json(data) }),
+    refund: (orderId) => request(`/payments/refund/${encodeURIComponent(orderId)}`, { method: "POST" }),
+  },
+  coupons: {
+    list: async () => (await request("/coupons")).coupons || [],
+    create: (data) => request("/coupons", { method: "POST", body: json(data) }),
+    update: (id, data) => request(`/coupons/${encodeURIComponent(id)}`, { method: "PUT", body: json(data) }),
+    remove: (id) => request(`/coupons/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    validate: (code, orderAmount) => request("/coupons/validate", { method: "POST", body: json({ code, orderAmount }) }),
   },
   reviews: {
     list: async (productId) => (await request(`/reviews/product/${encodeURIComponent(productId)}`)).reviews || [],
