@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 
 const orderItemSchema = new mongoose.Schema(
@@ -7,24 +8,20 @@ const orderItemSchema = new mongoose.Schema(
             ref: "Product",
             required: true
         },
-
         name: {
             type: String,
             required: true
         },
-
         quantity: {
             type: Number,
             required: true,
             min: 1
         },
-
         price: {
             type: Number,
             required: true,
             min: 0
         },
-
         image: {
             type: String,
             default: ""
@@ -52,6 +49,28 @@ const orderSchema = new mongoose.Schema(
         items: {
             type: [orderItemSchema],
             required: true
+        },
+
+        subtotal: {
+            type: Number,
+            min: 0
+        },
+
+        discountAmount: {
+            type: Number,
+            default: 0,
+            min: 0
+        },
+
+        couponCode: {
+            type: String,
+            default: null
+        },
+
+        couponId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Coupon",
+            default: null
         },
 
         totalAmount: {
@@ -83,25 +102,21 @@ const orderSchema = new mongoose.Schema(
             pincode: String
         },
 
-        // Customer cancellation request
         cancelRequested: {
             type: Boolean,
             default: false
         },
 
-        // Customer return request
         returnRequested: {
             type: Boolean,
             default: false
         },
 
-        // Reason for cancellation / return
         returnReason: {
             type: String,
             default: ""
         },
 
-        // Refund status
         refundStatus: {
             type: String,
             enum: [

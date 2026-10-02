@@ -47,7 +47,10 @@ function Checkout() {
         theme: { color: "#f97316" },
         handler: async (response) => {
           try {
-            const verified = await api.payments.verify(response);
+            const verified = await api.payments.verify({
+              ...response,
+              orderId: order.id,
+            });
             const confirmed = { ...order, ...verified.order, id: verified.order?._id || order.id, total: Number(verified.order?.totalAmount ?? order.total), status: "Confirmed", paymentMethod: "Razorpay" };
             dispatch(addOrder(confirmed));
             dispatch(setCart(await api.cart.clear()));

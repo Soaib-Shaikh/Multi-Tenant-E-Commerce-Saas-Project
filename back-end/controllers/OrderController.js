@@ -2,14 +2,18 @@ import Order from "../models/OrderModel.js";
 import Cart from "../models/CartModel.js";
 import Product from "../models/ProductModel.js";
 import User from "../models/UserModel.js";
+import Coupon from "../models/CouponModel.js";
 import { sendEmail } from "../services/EmailService.js";
+
+
+// CREATE ORDER
 
 
 // CREATE ORDER
 
 export const createOrder = async (req, res) => {
     try {
-        const { shippingAddress } = req.body;
+        const { shippingAddress, couponCode } = req.body;
 
         if (!shippingAddress) {
             return res.status(400).json({
@@ -31,7 +35,7 @@ export const createOrder = async (req, res) => {
         }
 
         const orderItems = [];
-        let totalAmount = 0;
+        let subtotal = 0;
 
         // Validate products and stock
         for (const item of cart.items) {
@@ -65,13 +69,93 @@ export const createOrder = async (req, res) => {
                 image: product.images?.[0] || ""
             });
 
-            totalAmount += itemTotal;
+            subtotal += itemTotal;
         }
 
+        // COUPON VALIDATION
+        let discountAmount = 0;
+        let appliedCoupon = null;
+
+        if (couponCode && couponCode.trim()) {
+            const normalizedCode = couponCode.trim().toUpperCase();
+
+            appliedCoupon = await Coupon.findOne({
+                tenantId: req.tenantId,
+                code: normalizedCode
+            });
+
+            if (!appliedCoupon) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid coupon code."
+                });
+            }
+
+            if (!appliedCoupon.isActive) {
+                return res.status(400).json({
+                    success: false,
+                    message: "This coupon is inactive."
+                });
+            }
+
+            if (new Date(appliedCoupon.expiresAt) < new Date()) {
+                return res.status(400).json({
+                    success: false,
+                    message: "This coupon has expired."
+                });
+            }
+
+            if (
+                appliedCoupon.usageLimit !== null &&
+                appliedCoupon.usedCount >= appliedCoupon.usageLimit
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Coupon usage limit reached."
+                });
+            }
+
+            if (subtotal < appliedCoupon.minOrderAmount) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Minimum order amount should be ₹${appliedCoupon.minOrderAmount}.`
+                });
+            }
+
+            // Calculate discount
+            if (appliedCoupon.discountType === "percentage") {
+                discountAmount =
+                    (subtotal * appliedCoupon.discountValue) / 100;
+            } else {
+                discountAmount = appliedCoupon.discountValue;
+            }
+
+            // Apply maximum discount limit
+            if (
+                appliedCoupon.maxDiscount !== null &&
+                discountAmount > appliedCoupon.maxDiscount
+            ) {
+                discountAmount = appliedCoupon.maxDiscount;
+            }
+
+            // Discount cannot exceed subtotal
+            discountAmount = Math.min(discountAmount, subtotal);
+        }
+
+        // Final amount after discount
+        const totalAmount = subtotal - discountAmount;
+
+        // CREATE ORDER
         const order = await Order.create({
             tenantId: req.tenantId,
             customerId: req.user.userId,
             items: orderItems,
+
+            subtotal,
+            discountAmount,
+            couponCode: appliedCoupon?.code || null,
+            couponId: appliedCoupon?._id || null,
+
             totalAmount,
             shippingAddress,
             status: "pending"
