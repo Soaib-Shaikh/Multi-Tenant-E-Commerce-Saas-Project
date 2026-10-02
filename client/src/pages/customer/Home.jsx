@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { products as sampleProducts } from "../../data/products";
-import { demoProducts } from "../../data/demoCatalog";
 import { api } from "../../api/client";
 
 const categories = [
@@ -38,7 +37,7 @@ function Home() {
     let active = true;
     api.products.publicList()
       .then((products) => { if (active) { setPublicCatalog(products); setCatalogError(""); } })
-      .catch(() => { if (active) { setPublicCatalog(demoProducts); setCatalogError(""); } });
+      .catch((error) => { if (active) { setPublicCatalog([]); setCatalogError(error.message); } });
     return () => { active = false; };
   }, [user]);
   const visibleCatalog = user ? catalog : publicCatalog;

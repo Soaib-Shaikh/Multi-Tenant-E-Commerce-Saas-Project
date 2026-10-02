@@ -8,6 +8,7 @@ const workspaceLinks = {
     ["Customers", "/admin/customers", "♧"],
     ["Products", "/admin/products", "□"],
     ["Orders", "/admin/orders", "▤"],
+    ["Analytics", "/admin/analytics", "▥"],
   ],
   vendor: [
     ["Overview", "/vendor/dashboard", "▦"],

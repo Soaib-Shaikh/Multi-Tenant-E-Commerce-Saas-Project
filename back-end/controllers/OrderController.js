@@ -2,6 +2,7 @@ import Order from "../models/OrderModel.js";
 import Cart from "../models/CartModel.js";
 import Product from "../models/ProductModel.js";
 import User from "../models/UserModel.js";
+import Tenant from "../models/TenantModel.js";
 import { sendEmail } from "../services/EmailService.js";
 
 
@@ -9,7 +10,7 @@ import { sendEmail } from "../services/EmailService.js";
 
 export const createOrder = async (req, res) => {
     try {
-        const { shippingAddress } = req.body;
+        const { shippingAddress, tenantId: requestedTenantId } = req.body;
 
         if (!shippingAddress) {
             return res.status(400).json({
@@ -18,10 +19,13 @@ export const createOrder = async (req, res) => {
             });
         }
 
-        const cart = await Cart.findOne({
-            tenantId: req.tenantId,
-            customerId: req.user.userId
-        }).populate("items.productId");
+        const customerCarts = await Cart.find({ customerId: req.user.userId });
+        const selectedTenantId = requestedTenantId || req.user.tenantId || customerCarts[0]?.tenantId;
+        if (!selectedTenantId) return res.status(400).json({ success: false, message: "Choose a store cart to check out." });
+        if (!await Tenant.exists({ _id: selectedTenantId, isActive: true })) {
+            return res.status(400).json({ success: false, message: "This store is not currently available for checkout." });
+        }
+        const cart = await Cart.findOne({ tenantId: selectedTenantId, customerId: req.user.userId }).populate("items.productId");
 
         if (!cart || cart.items.length === 0) {
             return res.status(400).json({
@@ -37,7 +41,7 @@ export const createOrder = async (req, res) => {
         for (const item of cart.items) {
             const product = await Product.findOne({
                 _id: item.productId._id,
-                tenantId: req.tenantId,
+                tenantId: selectedTenantId,
                 isActive: true
             });
 
@@ -69,7 +73,7 @@ export const createOrder = async (req, res) => {
         }
 
         const order = await Order.create({
-            tenantId: req.tenantId,
+            tenantId: selectedTenantId,
             customerId: req.user.userId,
             items: orderItems,
             totalAmount,
@@ -99,7 +103,6 @@ export const createOrder = async (req, res) => {
 export const getMyOrders = async (req, res) => {
     try {
         const orders = await Order.find({
-            tenantId: req.tenantId,
             customerId: req.user.userId
         }).sort({ createdAt: -1 });
 
@@ -127,7 +130,6 @@ export const getOrderById = async (req, res) => {
 
         const order = await Order.findOne({
             _id: id,
-            tenantId: req.tenantId,
             customerId: req.user.userId
         });
 
@@ -163,7 +165,6 @@ export const requestCancelOrder = async (req, res) => {
 
         const order = await Order.findOne({
             _id: id,
-            tenantId: req.tenantId,
             customerId: req.user.userId
         });
 
@@ -245,7 +246,6 @@ export const requestReturnOrder = async (req, res) => {
 
         const order = await Order.findOne({
             _id: id,
-            tenantId: req.tenantId,
             customerId: req.user.userId
         });
 

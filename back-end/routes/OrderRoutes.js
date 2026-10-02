@@ -20,7 +20,6 @@ const router = express.Router();
 router.post(
     "/",
     authMiddleware,
-    tenantMiddleware,
     roleMiddleware("customer"),
     createOrder
 );
@@ -30,7 +29,6 @@ router.post(
 router.get(
     "/",
     authMiddleware,
-    tenantMiddleware,
     roleMiddleware("customer"),
     getMyOrders
 );
@@ -40,7 +38,6 @@ router.get(
 router.get(
     "/:id",
     authMiddleware,
-    tenantMiddleware,
     roleMiddleware("customer"),
     getOrderById
 );
@@ -50,7 +47,6 @@ router.get(
 router.patch(
     "/:id/cancel-request",
     authMiddleware,
-    tenantMiddleware,
     roleMiddleware("customer"),
     requestCancelOrder
 );
@@ -59,7 +55,6 @@ router.patch(
 router.patch(
     "/:id/return-request",
     authMiddleware,
-    tenantMiddleware,
     roleMiddleware("customer"),
     requestReturnOrder
 );

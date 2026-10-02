@@ -27,7 +27,7 @@ export default function ApiBootstrap() {
         if (!active) return;
         dispatch(login({ user: me.user, token }));
         if (userRole === "admin") { dispatch(setProducts([])); return; }
-        const products = await api.products.list();
+        const products = userRole === "customer" ? await api.products.publicList() : await api.products.list();
         if (!active) return;
         dispatch(setProducts(products));
 

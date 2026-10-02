@@ -34,7 +34,10 @@ import AddProduct from "./pages/vendor/AddProduct";
 function ProtectedRoute({ roles, children }) {
   const user = useSelector((state) => state.auth.user);
   const location = useLocation();
-  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  if (!user) {
+    const loginPath = roles?.includes("admin") ? "/admin/login" : roles?.includes("vendor") ? "/login?role=vendor" : "/login";
+    return <Navigate to={loginPath} replace state={{ from: location.pathname }} />;
+  }
   if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
   return children;
 }
@@ -56,6 +59,7 @@ function App() {
         <Route path="/orders/:id" element={<ProtectedRoute roles={["customer"]}><OrderDetails /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
+        <Route path="/admin/login" element={<Login adminOnly />} />
         <Route path="/signup" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
@@ -63,6 +67,7 @@ function App() {
         <Route path="/register" element={<Navigate to="/signup" replace />} />
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/admin/dashboard" element={<ProtectedRoute roles={["admin"]}><WorkspaceLayout role="admin"><AdminDashboard /></WorkspaceLayout></ProtectedRoute>} />
+        <Route path="/admin/analytics" element={<ProtectedRoute roles={["admin"]}><WorkspaceLayout role="admin"><AdminDashboard /></WorkspaceLayout></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute roles={["admin"]}><WorkspaceLayout role="admin"><AdminUsers /></WorkspaceLayout></ProtectedRoute>} />
         <Route path="/admin/vendors" element={<ProtectedRoute roles={["admin"]}><WorkspaceLayout role="admin"><AdminVendors /></WorkspaceLayout></ProtectedRoute>} />
         <Route path="/admin/customers" element={<ProtectedRoute roles={["admin"]}><WorkspaceLayout role="admin"><AdminCustomers /></WorkspaceLayout></ProtectedRoute>} />

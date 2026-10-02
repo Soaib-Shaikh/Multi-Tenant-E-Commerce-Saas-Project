@@ -1,321 +1,111 @@
 import Cart from "../models/CartModel.js";
 import Product from "../models/ProductModel.js";
+import Tenant from "../models/TenantModel.js";
 
-// Add product to cart
+const customerIdFor = (req) => req.user.userId;
+
+const calculateCartTotal = async (cart) => {
+  const products = await Product.find({
+    _id: { $in: cart.items.map((item) => item.productId) },
+    tenantId: cart.tenantId,
+    isActive: true,
+  }).select("_id price");
+  const prices = new Map(products.map((product) => [product._id.toString(), product.price]));
+  cart.totalAmount = cart.items.reduce((sum, item) => sum + (prices.get(item.productId.toString()) || 0) * item.quantity, 0);
+  await cart.save();
+  return cart;
+};
+
 export const addToCart = async (req, res) => {
   try {
     const { productId, quantity = 1 } = req.body;
+    if (!productId) return res.status(400).json({ success: false, message: "Product ID is required." });
+    if (!Number.isInteger(Number(quantity)) || Number(quantity) < 1) return res.status(400).json({ success: false, message: "Quantity must be at least 1." });
 
-    if (!productId) {
-      return res.status(400).json({
-        success: false,
-        message: "Product ID is required."
-      });
+    const product = await Product.findOne({ _id: productId, isActive: true });
+    if (!product || !await Tenant.exists({ _id: product.tenantId, isActive: true })) {
+      return res.status(404).json({ success: false, message: "Product is not available from an active store." });
     }
+    if (product.stock < quantity) return res.status(400).json({ success: false, message: "Insufficient stock." });
 
-    if (quantity < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "Quantity must be at least 1."
-      });
-    }
-
-    // Check product
-    const product = await Product.findOne({
-      _id: productId,
-      tenantId: req.tenantId,
-      isActive: true
-    });
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found."
-      });
-    }
-
-    // Check stock
-    if (product.stock < quantity) {
-      return res.status(400).json({
-        success: false,
-        message: "Insufficient stock."
-      });
-    }
-
-    let cart = await Cart.findOne({
-      tenantId: req.tenantId,
-      customerId: req.user.userId
-    });
-
+    let cart = await Cart.findOne({ tenantId: product.tenantId, customerId: customerIdFor(req) });
     if (!cart) {
-      cart = await Cart.create({
-        tenantId: req.tenantId,
-        customerId: req.user.userId,
-        items: [
-          {
-            productId,
-            quantity
-          }
-        ]
-      });
+      cart = await Cart.create({ tenantId: product.tenantId, customerId: customerIdFor(req), items: [{ productId, quantity }] });
     } else {
-      const existingItem = cart.items.find(
-        (item) => item.productId.toString() === productId
-      );
-
+      const existingItem = cart.items.find((item) => item.productId.toString() === productId);
       if (existingItem) {
-        const newQuantity = existingItem.quantity + quantity;
-
-        if (newQuantity > product.stock) {
-          return res.status(400).json({
-            success: false,
-            message: "Requested quantity exceeds available stock."
-          });
-        }
-
-        existingItem.quantity = newQuantity;
-      } else {
-        cart.items.push({
-          productId,
-          quantity
-        });
-      }
-
-      await cart.save();
+        if (existingItem.quantity + Number(quantity) > product.stock) return res.status(400).json({ success: false, message: "Requested quantity exceeds available stock." });
+        existingItem.quantity += Number(quantity);
+      } else cart.items.push({ productId, quantity });
     }
-
     await calculateCartTotal(cart);
-
-    return res.status(200).json({
-      success: true,
-      message: "Product added to cart successfully.",
-      cart
-    });
+    return res.status(200).json({ success: true, message: "Product added to cart successfully.", cart });
   } catch (error) {
     console.error("ADD TO CART ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
-
-// Get cart
 export const getCart = async (req, res) => {
   try {
-    const cart = await Cart.findOne({
-      tenantId: req.tenantId,
-      customerId: req.user.userId
-    }).populate("items.productId", "name price stock images");
-
-    if (!cart) {
-      return res.status(200).json({
-        success: true,
-        cart: {
-          items: [],
-          totalAmount: 0
-        }
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      cart
-    });
+    const carts = await Cart.find({ customerId: customerIdFor(req) }).populate("items.productId", "name price stock images categoryId tenantId").populate("tenantId", "name isActive");
+    const activeCarts = carts.filter((cart) => cart.tenantId?.isActive);
+    const items = activeCarts.flatMap((cart) => cart.items.map((item) => ({
+      ...item.toObject(),
+      tenantId: cart.tenantId?._id || cart.tenantId,
+      storeName: cart.tenantId?.name || "Store",
+    })));
+    const totalAmount = activeCarts.reduce((sum, cart) => sum + Number(cart.totalAmount || 0), 0);
+    return res.status(200).json({ success: true, cart: { items, totalAmount } });
   } catch (error) {
     console.error("GET CART ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
-
-// Update cart item quantity
 export const updateCartItem = async (req, res) => {
   try {
     const { productId } = req.params;
-    const { quantity } = req.body;
-
-    if (!quantity || quantity < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "Quantity must be at least 1."
-      });
-    }
-
-    const product = await Product.findOne({
-      _id: productId,
-      tenantId: req.tenantId,
-      isActive: true
-    });
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found."
-      });
-    }
-
-    if (quantity > product.stock) {
-      return res.status(400).json({
-        success: false,
-        message: "Requested quantity exceeds available stock."
-      });
-    }
-
-    const cart = await Cart.findOne({
-      tenantId: req.tenantId,
-      customerId: req.user.userId
-    });
-
-    if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: "Cart not found."
-      });
-    }
-
-    const item = cart.items.find(
-      (item) => item.productId.toString() === productId
-    );
-
-    if (!item) {
-      return res.status(404).json({
-        success: false,
-        message: "Product is not in cart."
-      });
-    }
-
+    const quantity = Number(req.body.quantity);
+    if (!Number.isInteger(quantity) || quantity < 1) return res.status(400).json({ success: false, message: "Quantity must be at least 1." });
+    const product = await Product.findOne({ _id: productId, isActive: true });
+    if (!product) return res.status(404).json({ success: false, message: "Product not found." });
+    if (quantity > product.stock) return res.status(400).json({ success: false, message: "Requested quantity exceeds available stock." });
+    const cart = await Cart.findOne({ tenantId: product.tenantId, customerId: customerIdFor(req) });
+    if (!cart) return res.status(404).json({ success: false, message: "Cart not found." });
+    const item = cart.items.find((entry) => entry.productId.toString() === productId);
+    if (!item) return res.status(404).json({ success: false, message: "Product is not in cart." });
     item.quantity = quantity;
-
-    await cart.save();
     await calculateCartTotal(cart);
-
-    return res.status(200).json({
-      success: true,
-      message: "Cart updated successfully.",
-      cart
-    });
+    return res.status(200).json({ success: true, message: "Cart updated successfully.", cart });
   } catch (error) {
     console.error("UPDATE CART ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
-
-// Remove product from cart
 export const removeFromCart = async (req, res) => {
   try {
     const { productId } = req.params;
-
-    const cart = await Cart.findOne({
-      tenantId: req.tenantId,
-      customerId: req.user.userId
-    });
-
-    if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: "Cart not found."
-      });
-    }
-
-    const oldLength = cart.items.length;
-
-    cart.items = cart.items.filter(
-      (item) => item.productId.toString() !== productId
-    );
-
-    if (cart.items.length === oldLength) {
-      return res.status(404).json({
-        success: false,
-        message: "Product is not in cart."
-      });
-    }
-
-    await cart.save();
+    const cart = await Cart.findOne({ customerId: customerIdFor(req), "items.productId": productId });
+    if (!cart) return res.status(404).json({ success: false, message: "Product is not in cart." });
+    cart.items = cart.items.filter((item) => item.productId.toString() !== productId);
     await calculateCartTotal(cart);
-
-    return res.status(200).json({
-      success: true,
-      message: "Product removed from cart successfully.",
-      cart
-    });
+    return res.status(200).json({ success: true, message: "Product removed from cart successfully.", cart });
   } catch (error) {
     console.error("REMOVE FROM CART ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
-
-// Clear cart
 export const clearCart = async (req, res) => {
   try {
-    const cart = await Cart.findOne({
-      tenantId: req.tenantId,
-      customerId: req.user.userId
-    });
-
-    if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: "Cart not found."
-      });
-    }
-
-    cart.items = [];
-    cart.totalAmount = 0;
-
-    await cart.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "Cart cleared successfully.",
-      cart
-    });
+    const filter = { customerId: customerIdFor(req) };
+    if (req.body?.tenantId) filter.tenantId = req.body.tenantId;
+    await Cart.deleteMany(filter);
+    return res.status(200).json({ success: true, message: "Cart cleared successfully.", cart: { items: [], totalAmount: 0 } });
   } catch (error) {
     console.error("CLEAR CART ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
-};
-
-
-// Calculate cart total
-const calculateCartTotal = async (cart) => {
-  let total = 0;
-
-  for (const item of cart.items) {
-    const product = await Product.findOne({
-      _id: item.productId,
-      tenantId: cart.tenantId,
-      isActive: true
-    });
-
-    if (product) {
-      total += product.price * item.quantity;
-    }
-  }
-
-  cart.totalAmount = total;
-
-  await cart.save();
-
-  return cart;
 };

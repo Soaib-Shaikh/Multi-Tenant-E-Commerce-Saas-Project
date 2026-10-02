@@ -1,7 +1,6 @@
 import express from "express";
 
 import authMiddleware from "../middlewares/authMiddleware.js";
-import tenantMiddleware from "../middlewares/tenantMiddleware.js";
 import roleMiddleware from "../middlewares/roleMiddleware.js";
 
 import {
@@ -17,7 +16,6 @@ const router = express.Router();
 router.post(
   "/",
   authMiddleware,
-  tenantMiddleware,
   roleMiddleware("customer"),
   addToCart
 );
@@ -25,7 +23,6 @@ router.post(
 router.get(
   "/",
   authMiddleware,
-  tenantMiddleware,
   roleMiddleware("customer"),
   getCart
 );
@@ -33,7 +30,6 @@ router.get(
 router.put(
   "/:productId",
   authMiddleware,
-  tenantMiddleware,
   roleMiddleware("customer"),
   updateCartItem
 );
@@ -41,7 +37,6 @@ router.put(
 router.delete(
   "/:productId",
   authMiddleware,
-  tenantMiddleware,
   roleMiddleware("customer"),
   removeFromCart
 );
@@ -49,7 +44,6 @@ router.delete(
 router.delete(
   "/",
   authMiddleware,
-  tenantMiddleware,
   roleMiddleware("customer"),
   clearCart
 );
