@@ -18,7 +18,7 @@ function ForgotPassword() {
       setNotice(result.message || "If an account exists for that email, a reset link will be sent.");
     } catch (requestError) {
       setError(requestError.status === 404
-        ? "Password reset is not available yet. The backend needs the forgot-password endpoint."
+        ? "The forgot-password endpoint was not found. Check that the latest backend is running and VITE_API_BASE_URL points to it."
         : requestError.message || "Could not request a password reset.");
     } finally {
       setLoading(false);

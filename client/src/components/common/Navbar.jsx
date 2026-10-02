@@ -25,10 +25,10 @@ function Navbar() {
           <NavLink to="/" className={linkClass} onClick={close}>Home</NavLink>
           <NavLink to="/products" className={linkClass} onClick={close}>Products</NavLink>
           {user?.role === "customer" && <NavLink to="/orders" className={linkClass} onClick={close}>Orders</NavLink>}
-          {user?.role === "vendor" && <NavLink to="/vendor/dashboard" className={linkClass} onClick={close}>Vendor</NavLink>}
-          {user?.role === "admin" && <NavLink to="/admin/dashboard" className={linkClass} onClick={close}>Admin</NavLink>}
+          {user?.role === "vendor" && <NavLink to="/vendor/dashboard" className={linkClass} onClick={close}>Seller dashboard</NavLink>}
+          {user?.role === "admin" && <NavLink to="/admin/dashboard" className={linkClass} onClick={close}>Admin panel</NavLink>}
           {user?.role === "customer" && <NavLink to="/cart" className={linkClass} onClick={close}>Cart <span className="ml-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-700">{count}</span></NavLink>}
-          {user ? <><NavLink to="/profile" className={linkClass} onClick={close}>Profile</NavLink><button type="button" onClick={handleLogout} className="rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-600 hover:text-orange-600">Log out</button></> : <><NavLink to="/login" className={linkClass} onClick={close}>Login</NavLink><NavLink to="/signup" className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600" onClick={close}>Sign up</NavLink></>}
+          {user ? <><NavLink to="/profile" className={linkClass} onClick={close}>Profile</NavLink><button type="button" onClick={handleLogout} className="rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-600 hover:text-orange-600">Log out</button></> : <><NavLink to="/login" className={linkClass} onClick={close}>Login</NavLink><NavLink to="/signup?role=customer" className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600" onClick={close}>Sign up</NavLink></>}
         </div>
       </nav>
     </header>

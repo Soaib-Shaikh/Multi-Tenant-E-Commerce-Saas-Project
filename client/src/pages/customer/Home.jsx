@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { products as sampleProducts } from "../../data/products";
+import { demoProducts } from "../../data/demoCatalog";
+import { api } from "../../api/client";
 
 const categories = [
   {
@@ -28,7 +31,18 @@ const categories = [
 function Home() {
   const user = useSelector((state) => state.auth.user);
   const catalog = useSelector((state) => state.vendorProducts.products);
-  const featuredProducts = catalog.slice(0, 4);
+  const [publicCatalog, setPublicCatalog] = useState([]);
+  const [catalogError, setCatalogError] = useState("");
+  useEffect(() => {
+    if (user) return undefined;
+    let active = true;
+    api.products.publicList()
+      .then((products) => { if (active) { setPublicCatalog(products); setCatalogError(""); } })
+      .catch(() => { if (active) { setPublicCatalog(demoProducts); setCatalogError(""); } });
+    return () => { active = false; };
+  }, [user]);
+  const visibleCatalog = user ? catalog : publicCatalog;
+  const featuredProducts = visibleCatalog.slice(0, 4);
   return (
     <main className="min-h-screen bg-gray-50">
 
@@ -79,7 +93,7 @@ function Home() {
 
               <div>
                 <p className="text-2xl font-bold">
-                  {catalog.length || "—"}
+              {visibleCatalog.length || "—"}
                 </p>
 
                 <p className="text-sm text-gray-500">
@@ -89,7 +103,7 @@ function Home() {
 
               <div>
                 <p className="text-2xl font-bold">
-                  {new Set(catalog.map((product) => product.category)).size || "—"}
+                  {new Set(visibleCatalog.map((product) => product.category)).size || "—"}
                 </p>
 
                 <p className="text-sm text-gray-500">
@@ -158,6 +172,26 @@ function Home() {
           </div>
 
         </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-6 py-10">
+        <div className="mb-5 text-center">
+          <p className="font-semibold text-orange-500">Choose your workspace</p>
+          <h2 className="mt-1 text-2xl font-bold">Store management access</h2>
+        </div>
+        <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-2">
+          {[
+            ["Seller", "Manage your own store, products, and sales.", "🏪", "/login?role=vendor"],
+            ["Admin", "Manage stores and the ShopSaaS platform.", "⚙️", "/login?role=admin"],
+          ].map(([title, description, icon, href]) => (
+            <Link key={title} to={href} className="group flex items-center gap-4 rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-orange-300 hover:shadow-md">
+              <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-2xl">{icon}</span>
+              <span className="min-w-0 flex-1"><span className="block font-bold text-slate-900 group-hover:text-orange-600">{title}</span><span className="mt-1 block text-sm text-slate-500">{description}</span></span>
+              <span aria-hidden="true" className="font-bold text-orange-600">→</span>
+            </Link>
+          ))}
+        </div>
+        <p className="mt-4 text-center text-sm text-slate-500">Customers can browse products without signing in. Log in or sign up only when you’re ready to buy.</p>
       </section>
 
       {/* ================= CATEGORIES ================= */}
@@ -285,9 +319,9 @@ function Home() {
 
               </Link>
             )) : <div className="col-span-full rounded-2xl border border-dashed bg-slate-50 p-10 text-center">
-              <h3 className="text-lg font-semibold">{user ? "No products in this store yet" : "Sign in to browse your store"}</h3>
-              <p className="mt-2 text-sm text-slate-600">{user ? "Products added by your store will appear here." : "Store products are private to each tenant. Sign in with a store customer account to view its catalog."}</p>
-              {!user && <Link to="/login" className="mt-5 inline-block rounded-lg bg-orange-500 px-5 py-3 font-semibold text-white">Sign in</Link>}
+              <h3 className="text-lg font-semibold">{catalogError ? "Store catalog is unavailable" : "No products in this store yet"}</h3>
+              <p className="mt-2 text-sm text-slate-600">{catalogError || "Products added by this store will appear here. You can browse without an account; sign in is only needed to buy."}</p>
+              {catalogError && !user && <Link to="/products" className="mt-5 inline-block rounded-lg bg-orange-500 px-5 py-3 font-semibold text-white">Browse products</Link>}
             </div>}
 
           </div>
