@@ -1,4 +1,3 @@
-
 import User from "../models/UserModel.js";
 import Tenant from "../models/TenantModel.js";
 import Product from "../models/ProductModel.js";
