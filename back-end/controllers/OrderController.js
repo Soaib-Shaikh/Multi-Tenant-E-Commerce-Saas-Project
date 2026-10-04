@@ -2,7 +2,7 @@ import Order from "../models/OrderModel.js";
 import Cart from "../models/CartModel.js";
 import Product from "../models/ProductModel.js";
 import User from "../models/UserModel.js";
-import Coupon from "../models/CouponModel.js";
+import Coupon from "../models/Couponmodel.js";
 import { sendEmail } from "../services/EmailService.js";
 
 
