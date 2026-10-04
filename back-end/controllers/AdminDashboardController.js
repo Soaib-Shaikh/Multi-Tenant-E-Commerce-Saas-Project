@@ -5,7 +5,6 @@ import Product from "../models/ProductModel.js";
 import Order from "../models/OrderModel.js";
 import Payment from "../models/PaymentModel.js";
 import Category from "../models/CategoryModel.js";
-import { sendEmail } from "../services/EmailService.js";
 
 // Get Admin Dashboard
 export const getAdminDashboard = async (req, res) => {

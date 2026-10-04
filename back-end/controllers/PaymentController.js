@@ -8,7 +8,7 @@ import Cart from "../models/CartModel.js";
 import User from "../models/UserModel.js";
 
 import { sendEmail } from "../services/EmailService.js";
-import Coupon from "../models/CouponModel.js";
+import Coupon from "../models/Couponmodel.js";
 
 
 // Create Payment
