@@ -142,6 +142,23 @@ export const api = {
     requestReturn: async (id, reason) => normalizeOrder((await request(`/orders/${encodeURIComponent(id)}/return-request`, { method: "PATCH", body: json({ reason }) })).order),
     updateStatus: async (id, status) => normalizeOrder((await request(`/orders/${encodeURIComponent(id)}/status`, { method: "PATCH", body: json({ status }) })).order),
   },
+  notifications: {
+    list: async () => {
+      return request("/notifications");
+    },
+
+    markRead: async (id) => {
+      return request(`/notifications/${encodeURIComponent(id)}/read`, {
+        method: "PATCH",
+      });
+    },
+
+    markAllRead: async () => {
+      return request("/notifications/read-all", {
+        method: "PATCH",
+      });
+    },
+  },
   payments: {
     create: (orderId) => request("/payments/create", { method: "POST", body: json({ orderId }) }),
     verify: (data) => request("/payments/verify", { method: "POST", body: json(data) }),

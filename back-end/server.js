@@ -16,6 +16,7 @@ import sellerDashboardRoutes from "./routes/SellerDashboardRoutes.js";
 import adminDashboardRoutes from "./routes/AdminDashboardRoutes.js";
 import couponRoutes from "./routes/CouponRoutes.js";
 import publicCatalogRoutes from "./routes/PublicCatalogRoutes.js";
+import notificationRoutes from "./routes/NotificationRoutes.js";
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -49,6 +50,7 @@ app.use("/api/seller/dashboard", sellerDashboardRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use("/api/coupons", couponRoutes)
 app.use("/api/public/catalog", publicCatalogRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.listen(port, () => {
     console.log(`Server is running on : http://localhost:${port}`);
