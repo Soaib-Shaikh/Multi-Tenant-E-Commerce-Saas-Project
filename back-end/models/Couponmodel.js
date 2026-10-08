@@ -74,7 +74,8 @@ couponSchema.index(
 );
 
 couponSchema.index({ tenantId: 1 });
-
-const Coupon = mongoose.model("Coupon", couponSchema);
+const Coupon =
+    mongoose.models.Coupon ||
+    mongoose.model("Coupon", couponSchema);
 
 export default Coupon;

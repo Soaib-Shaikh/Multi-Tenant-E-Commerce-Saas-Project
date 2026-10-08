@@ -1,14 +1,13 @@
 import crypto from "crypto";
 
 import razorpay from "../configs/razorpay.js";
-
 import Payment from "../models/PaymentModel.js";
 import Order from "../models/OrderModel.js";
 import Product from "../models/ProductModel.js";
 import Cart from "../models/CartModel.js";
 import User from "../models/UserModel.js";
-
 import { sendEmail } from "../services/EmailService.js";
+import Coupon from "../models/Couponmodel.js";
 
 
 // Create Payment
@@ -111,6 +110,8 @@ export const createPayment = async (req, res) => {
     }
 };
 
+
+// Verify Payment
 
 // Verify Payment
 export const verifyPayment = async (req, res) => {
@@ -236,16 +237,49 @@ export const verifyPayment = async (req, res) => {
 
         await payment.save();
 
+        // UPDATE COUPON USAGE AFTER SUCCESSFUL PAYMENT
+        if (order.couponId) {
+            try {
+                const updatedCoupon = await Coupon.findOneAndUpdate(
+                    {
+                        _id: order.couponId,
+                        tenantId: req.tenantId
+                    },
+                    {
+                        $inc: { usedCount: 1 }
+                    },
+                    {
+                        new: true
+                    }
+                );
+
+                if (!updatedCoupon) {
+                    console.error(
+                        "COUPON NOT FOUND:",
+                        order.couponId
+                    );
+                } else {
+                    console.log(
+                        "COUPON USAGE UPDATED:",
+                        updatedCoupon.code,
+                        updatedCoupon.usedCount
+                    );
+                }
+
+            } catch (couponError) {
+                console.error(
+                    "COUPON USAGE UPDATE ERROR:",
+                    couponError.message
+                );
+            }
+        }
+
         // Update order
         order.status = "confirmed";
 
         await order.save();
 
-
-        // =====================================================
         // SEND ORDER CONFIRMATION EMAIL
-        // =====================================================
-
         try {
             const user = await User.findById(req.user.userId);
 
@@ -253,8 +287,7 @@ export const verifyPayment = async (req, res) => {
                 await sendEmail({
                     to: user.email,
 
-                    subject:
-                        "Order Confirmed - E-Commerce SaaS",
+                    subject: "Order Confirmed - E-Commerce SaaS",
 
                     html: `
                         <div
@@ -266,7 +299,6 @@ export const verifyPayment = async (req, res) => {
                                 color: #333;
                             "
                         >
-
                             <h2 style="color: #16a34a;">
                                 Order Confirmed 🎉
                             </h2>
@@ -295,6 +327,16 @@ export const verifyPayment = async (req, res) => {
                             </p>
 
                             <p>
+                                <strong>Subtotal:</strong>
+                                ₹${order.subtotal ?? order.totalAmount}
+                            </p>
+
+                            <p>
+                                <strong>Discount:</strong>
+                                ₹${order.discountAmount || 0}
+                            </p>
+
+                            <p>
                                 <strong>Total Amount:</strong>
                                 ₹${order.totalAmount}
                             </p>
@@ -308,9 +350,7 @@ export const verifyPayment = async (req, res) => {
                                     .map(
                                         (item) => `
                                             <li style="margin-bottom: 8px;">
-                                                <strong>
-                                                    ${item.name}
-                                                </strong>
+                                                <strong>${item.name}</strong>
                                                 × ${item.quantity}
                                                 — ₹${item.price * item.quantity}
                                             </li>
@@ -333,8 +373,7 @@ export const verifyPayment = async (req, res) => {
                                 <br />
 
                                 ${order.shippingAddress.city},
-                                ${order.shippingAddress.state}
-                                -
+                                ${order.shippingAddress.state} -
                                 ${order.shippingAddress.pincode}
                                 <br />
 
@@ -349,11 +388,8 @@ export const verifyPayment = async (req, res) => {
                             </p>
 
                             <p>
-                                <strong>
-                                    E-Commerce SaaS Team
-                                </strong>
+                                <strong>E-Commerce SaaS Team</strong>
                             </p>
-
                         </div>
                     `
                 });
@@ -372,11 +408,7 @@ export const verifyPayment = async (req, res) => {
             );
         }
 
-
-        // =====================================================
         // REMOVE ORDERED PRODUCTS FROM CART
-        // =====================================================
-
         const cart = await Cart.findOne({
             tenantId: order.tenantId,
             customerId: req.user.userId
@@ -414,11 +446,9 @@ export const verifyPayment = async (req, res) => {
             await cart.save();
         }
 
-
         return res.status(200).json({
             success: true,
-            message:
-                "Payment verified successfully. Order confirmed.",
+            message: "Payment verified successfully. Order confirmed.",
             payment,
             order
         });
