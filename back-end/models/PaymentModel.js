@@ -22,7 +22,6 @@ const paymentSchema = new mongoose.Schema(
         transactionId: {
             type: String,
             default: undefined,
-            
         },
 
         amount: {

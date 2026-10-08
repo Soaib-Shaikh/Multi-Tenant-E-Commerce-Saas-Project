@@ -21,6 +21,7 @@ router.get(
     "/",
     authMiddleware,
     tenantMiddleware,
+    roleMiddleware("seller", "seller_staff"),
     getProducts
 );
 
@@ -30,6 +31,7 @@ router.get(
     "/:id",
     authMiddleware,
     tenantMiddleware,
+    roleMiddleware("seller", "seller_staff"),
     getProductById
 );
 

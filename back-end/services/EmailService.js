@@ -1,11 +1,15 @@
 import { Resend } from "resend";
 import dotenv from "dotenv";
 dotenv.config();
-const resend = new Resend(process.env.RESEND_EMAIL_API_KEY);
+const getResendClient = () => {
+  const apiKey = process.env.RESEND_EMAIL_API_KEY;
+  if (!apiKey) throw new Error("Email is not configured. Set RESEND_EMAIL_API_KEY in the backend environment.");
+  return new Resend(apiKey);
+};
 
 export const sendEmail = async ({ to, subject, html }) => {
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResendClient().emails.send({
       from: "E-Commerce SaaS <onboarding@resend.dev>",
       to,
       subject,

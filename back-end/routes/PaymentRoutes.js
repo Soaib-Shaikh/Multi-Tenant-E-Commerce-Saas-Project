@@ -17,7 +17,6 @@ const router = express.Router();
 router.post(
     "/create",
     authMiddleware,
-    tenantMiddleware,
     roleMiddleware("customer"),
     createPayment
 );
@@ -27,7 +26,6 @@ router.post(
 router.post(
     "/verify",
     authMiddleware,
-    tenantMiddleware,
     roleMiddleware("customer"),
     verifyPayment
 );

@@ -2,18 +2,16 @@ import Order from "../models/OrderModel.js";
 import Cart from "../models/CartModel.js";
 import Product from "../models/ProductModel.js";
 import User from "../models/UserModel.js";
+import Tenant from "../models/TenantModel.js";
 import Coupon from "../models/Couponmodel.js";
 import { sendEmail } from "../services/EmailService.js";
 
 
 // CREATE ORDER
 
-
-// CREATE ORDER
-
 export const createOrder = async (req, res) => {
     try {
-        const { shippingAddress, couponCode } = req.body;
+        const { shippingAddress, tenantId: requestedTenantId, couponCode } = req.body;
 
         if (!shippingAddress) {
             return res.status(400).json({
@@ -22,10 +20,13 @@ export const createOrder = async (req, res) => {
             });
         }
 
-        const cart = await Cart.findOne({
-            tenantId: req.tenantId,
-            customerId: req.user.userId
-        }).populate("items.productId");
+        const customerCarts = await Cart.find({ customerId: req.user.userId });
+        const selectedTenantId = requestedTenantId || req.user.tenantId || customerCarts[0]?.tenantId;
+        if (!selectedTenantId) return res.status(400).json({ success: false, message: "Choose a store cart to check out." });
+        if (!await Tenant.exists({ _id: selectedTenantId, isActive: true })) {
+            return res.status(400).json({ success: false, message: "This store is not currently available for checkout." });
+        }
+        const cart = await Cart.findOne({ tenantId: selectedTenantId, customerId: req.user.userId }).populate("items.productId");
 
         if (!cart || cart.items.length === 0) {
             return res.status(400).json({
@@ -41,7 +42,7 @@ export const createOrder = async (req, res) => {
         for (const item of cart.items) {
             const product = await Product.findOne({
                 _id: item.productId._id,
-                tenantId: req.tenantId,
+                tenantId: selectedTenantId,
                 isActive: true
             });
 
@@ -72,49 +73,26 @@ export const createOrder = async (req, res) => {
             subtotal += itemTotal;
         }
 
-        // COUPON VALIDATION
+        // Validate and calculate a coupon against the selected store's cart.
         let discountAmount = 0;
         let appliedCoupon = null;
 
         if (couponCode && couponCode.trim()) {
             const normalizedCode = couponCode.trim().toUpperCase();
-
-            appliedCoupon = await Coupon.findOne({
-                tenantId: req.tenantId,
-                code: normalizedCode
-            });
+            appliedCoupon = await Coupon.findOne({ tenantId: selectedTenantId, code: normalizedCode });
 
             if (!appliedCoupon) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid coupon code."
-                });
+                return res.status(400).json({ success: false, message: "Invalid coupon code." });
             }
-
             if (!appliedCoupon.isActive) {
-                return res.status(400).json({
-                    success: false,
-                    message: "This coupon is inactive."
-                });
+                return res.status(400).json({ success: false, message: "This coupon is inactive." });
             }
-
             if (new Date(appliedCoupon.expiresAt) < new Date()) {
-                return res.status(400).json({
-                    success: false,
-                    message: "This coupon has expired."
-                });
+                return res.status(400).json({ success: false, message: "This coupon has expired." });
             }
-
-            if (
-                appliedCoupon.usageLimit !== null &&
-                appliedCoupon.usedCount >= appliedCoupon.usageLimit
-            ) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Coupon usage limit reached."
-                });
+            if (appliedCoupon.usageLimit !== null && appliedCoupon.usedCount >= appliedCoupon.usageLimit) {
+                return res.status(400).json({ success: false, message: "Coupon usage limit reached." });
             }
-
             if (subtotal < appliedCoupon.minOrderAmount) {
                 return res.status(400).json({
                     success: false,
@@ -122,40 +100,26 @@ export const createOrder = async (req, res) => {
                 });
             }
 
-            // Calculate discount
-            if (appliedCoupon.discountType === "percentage") {
-                discountAmount =
-                    (subtotal * appliedCoupon.discountValue) / 100;
-            } else {
-                discountAmount = appliedCoupon.discountValue;
-            }
+            discountAmount = appliedCoupon.discountType === "percentage"
+                ? (subtotal * appliedCoupon.discountValue) / 100
+                : appliedCoupon.discountValue;
 
-            // Apply maximum discount limit
-            if (
-                appliedCoupon.maxDiscount !== null &&
-                discountAmount > appliedCoupon.maxDiscount
-            ) {
+            if (appliedCoupon.maxDiscount !== null && discountAmount > appliedCoupon.maxDiscount) {
                 discountAmount = appliedCoupon.maxDiscount;
             }
-
-            // Discount cannot exceed subtotal
             discountAmount = Math.min(discountAmount, subtotal);
         }
 
-        // Final amount after discount
         const totalAmount = subtotal - discountAmount;
 
-        // CREATE ORDER
         const order = await Order.create({
-            tenantId: req.tenantId,
+            tenantId: selectedTenantId,
             customerId: req.user.userId,
             items: orderItems,
-
             subtotal,
             discountAmount,
             couponCode: appliedCoupon?.code || null,
             couponId: appliedCoupon?._id || null,
-
             totalAmount,
             shippingAddress,
             status: "pending"
@@ -183,7 +147,6 @@ export const createOrder = async (req, res) => {
 export const getMyOrders = async (req, res) => {
     try {
         const orders = await Order.find({
-            tenantId: req.tenantId,
             customerId: req.user.userId
         }).sort({ createdAt: -1 });
 
@@ -211,7 +174,6 @@ export const getOrderById = async (req, res) => {
 
         const order = await Order.findOne({
             _id: id,
-            tenantId: req.tenantId,
             customerId: req.user.userId
         });
 
@@ -247,7 +209,6 @@ export const requestCancelOrder = async (req, res) => {
 
         const order = await Order.findOne({
             _id: id,
-            tenantId: req.tenantId,
             customerId: req.user.userId
         });
 
@@ -329,7 +290,6 @@ export const requestReturnOrder = async (req, res) => {
 
         const order = await Order.findOne({
             _id: id,
-            tenantId: req.tenantId,
             customerId: req.user.userId
         });
 

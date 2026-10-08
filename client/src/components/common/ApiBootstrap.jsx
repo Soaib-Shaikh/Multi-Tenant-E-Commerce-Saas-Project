@@ -20,6 +20,9 @@ export default function ApiBootstrap() {
       return undefined;
     }
 
+    // Prevent a previous account's cached products from appearing before this
+    // user's JWT-scoped catalog request completes.
+    dispatch(setProducts([]));
     let active = true;
     const refresh = async () => {
       try {
@@ -27,7 +30,7 @@ export default function ApiBootstrap() {
         if (!active) return;
         dispatch(login({ user: me.user, token }));
         if (userRole === "admin") { dispatch(setProducts([])); return; }
-        const products = await api.products.list();
+        const products = userRole === "customer" ? await api.products.publicList() : await api.products.list();
         if (!active) return;
         dispatch(setProducts(products));
 

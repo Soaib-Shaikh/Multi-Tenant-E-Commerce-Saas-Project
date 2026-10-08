@@ -25,7 +25,6 @@ export const createPayment = async (req, res) => {
         // Find customer order
         const order = await Order.findOne({
             _id: orderId,
-            tenantId: req.tenantId,
             customerId: req.user.userId
         });
 
@@ -46,7 +45,7 @@ export const createPayment = async (req, res) => {
         // Check existing payment
         const existingPayment = await Payment.findOne({
             orderId: order._id,
-            tenantId: req.tenantId,
+            tenantId: order.tenantId,
             status: "success"
         });
 
@@ -64,14 +63,14 @@ export const createPayment = async (req, res) => {
             receipt: `order_${order._id}`,
             notes: {
                 orderId: order._id.toString(),
-                tenantId: req.tenantId.toString(),
+                tenantId: order.tenantId.toString(),
                 customerId: req.user.userId.toString()
             }
         });
 
         // Create payment record
         const payment = await Payment.create({
-            tenantId: req.tenantId,
+            tenantId: order.tenantId,
             orderId: order._id,
             razorpayOrderId: razorpayOrder.id,
             amount: order.totalAmount,
@@ -139,7 +138,6 @@ export const verifyPayment = async (req, res) => {
         // Find customer order
         const order = await Order.findOne({
             _id: orderId,
-            tenantId: req.tenantId,
             customerId: req.user.userId
         });
 
@@ -153,7 +151,7 @@ export const verifyPayment = async (req, res) => {
         // Find payment record
         const payment = await Payment.findOne({
             orderId: order._id,
-            tenantId: req.tenantId,
+            tenantId: order.tenantId,
             razorpayOrderId: razorpay_order_id
         });
 
@@ -200,7 +198,7 @@ export const verifyPayment = async (req, res) => {
         for (const item of order.items) {
             const product = await Product.findOne({
                 _id: item.productId,
-                tenantId: req.tenantId,
+                tenantId: order.tenantId,
                 isActive: true
             });
 
@@ -223,7 +221,7 @@ export const verifyPayment = async (req, res) => {
         for (const item of order.items) {
             const product = await Product.findOne({
                 _id: item.productId,
-                tenantId: req.tenantId,
+                tenantId: order.tenantId,
                 isActive: true
             });
 
@@ -412,7 +410,7 @@ export const verifyPayment = async (req, res) => {
 
         // REMOVE ORDERED PRODUCTS FROM CART
         const cart = await Cart.findOne({
-            tenantId: req.tenantId,
+            tenantId: order.tenantId,
             customerId: req.user.userId
         });
 
@@ -434,7 +432,7 @@ export const verifyPayment = async (req, res) => {
             for (const item of cart.items) {
                 const product = await Product.findOne({
                     _id: item.productId,
-                    tenantId: req.tenantId,
+                    tenantId: order.tenantId,
                     isActive: true
                 });
 

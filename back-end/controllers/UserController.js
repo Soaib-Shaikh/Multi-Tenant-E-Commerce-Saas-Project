@@ -14,10 +14,7 @@ export const registerUser = async (req, res) => {
             email,
             password,
             role,
-            tenantId,
-            storeName,
-            slug,
-            subdomain
+            storeName
         } = req.body;
 
         // Required fields
@@ -38,35 +35,12 @@ export const registerUser = async (req, res) => {
             });
         }
 
-        // Seller store details validation
+        // Seller store details validation. Slug and subdomain are server generated.
         if (userRole === "seller") {
-            if (!storeName || !slug || !subdomain) {
+            if (!storeName || !storeName.trim()) {
                 return res.status(400).json({
                     success: false,
-                    message:
-                        "Seller must provide store name, slug and subdomain."
-                });
-            }
-        }
-
-        // Customer tenant validation
-        if (userRole === "customer") {
-            if (!tenantId) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Tenant ID is required for customer registration."
-                });
-            }
-
-            const tenant = await Tenant.findOne({
-                _id: tenantId,
-                isActive: true
-            });
-
-            if (!tenant) {
-                return res.status(404).json({
-                    success: false,
-                    message: "Active tenant not found."
+                    message: "Please provide a store name."
                 });
             }
         }
@@ -141,26 +115,20 @@ export const registerUser = async (req, res) => {
             });
         }
 
-        // If seller, check tenant slug/subdomain
+        // Derive unique store identifiers on the server from the store name.
+        let generatedSlug = "";
+        let generatedSubdomain = "";
         if (userRole === "seller") {
-            const existingTenant = await Tenant.findOne({
-                $or: [
-                    {
-                        slug: slug.toLowerCase()
-                    },
-                    {
-                        subdomain: subdomain.toLowerCase()
-                    }
-                ]
-            });
-
-            if (existingTenant) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Store slug or subdomain already exists."
-                });
+            const base = storeName.toLowerCase().trim()
+                .normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "store";
+            generatedSlug = base;
+            let suffix = 1;
+            while (await Tenant.exists({ slug: generatedSlug })) {
+                suffix += 1;
+                generatedSlug = `${base}-${suffix}`;
             }
+            generatedSubdomain = generatedSlug.replace(/-/g, "");
         }
 
         // Hash password
@@ -173,9 +141,8 @@ export const registerUser = async (req, res) => {
             password: hashPassword,
             role: userRole,
 
-            // Customer gets selected tenant
-            // Seller gets tenant after tenant creation
-            tenantId: userRole === "customer" ? tenantId : null
+            // Customers are marketplace accounts and are not tied to one store.
+            tenantId: null
         });
 
         // Seller -> Create Tenant automatically
@@ -183,8 +150,8 @@ export const registerUser = async (req, res) => {
             try {
                 const newTenant = await Tenant.create({
                     name: storeName,
-                    slug: slug.toLowerCase(),
-                    subdomain: subdomain.toLowerCase(),
+                    slug: generatedSlug,
+                    subdomain: generatedSubdomain,
 
                     // Seller becomes tenant owner
                     owner: newUser._id,

@@ -1,5 +1,4 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api").replace(/\/$/, "");
-export const TENANT_ID = import.meta.env.VITE_TENANT_ID || "";
 export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "";
 export const TOKEN_KEY = "shopSaasToken";
 
@@ -49,6 +48,7 @@ export const normalizeProduct = (product) => {
   return {
     ...product,
     id: product?._id || product?.id,
+    tenantId: typeof product?.tenantId === "object" ? product?.tenantId?._id : product?.tenantId,
     categoryId: typeof category === "object" ? category?._id : category,
     category: typeof category === "object" ? category?.name || "Uncategorized" : product?.category || "Uncategorized",
     image: images[0] || product?.image || "",
@@ -77,7 +77,7 @@ export const normalizeOrder = (order) => ({
 export const normalizeCart = (cart) => ({
   items: (cart?.items || []).filter((entry) => entry.productId && typeof entry.productId === "object").map((entry) => {
     const product = normalizeProduct(entry.productId);
-    return { ...product, quantity: Number(entry.quantity || 1) };
+    return { ...product, tenantId: entry.tenantId || product.tenantId, storeName: entry.storeName || product.storeName, quantity: Number(entry.quantity || 1) };
   }),
   totalAmount: Number(cart?.totalAmount || 0),
 });
@@ -108,14 +108,10 @@ export const api = {
     list: async () => ((await request("/products")).products || []).map(normalizeProduct),
     get: async (id) => normalizeProduct((await request(`/products/${encodeURIComponent(id)}`)).product),
     publicList: async () => {
-      if (!TENANT_ID) throw new ApiError("Public catalog is not configured. Set VITE_TENANT_ID to the active store ID.", 0);
-      const query = new URLSearchParams({ tenantId: TENANT_ID });
-      return ((await request(`/public/catalog/products?${query}`)).products || []).map(normalizeProduct);
+      return ((await request("/public/catalog/products")).products || []).map(normalizeProduct);
     },
     publicGet: async (id) => {
-      if (!TENANT_ID) throw new ApiError("Public catalog is not configured. Set VITE_TENANT_ID to the active store ID.", 0);
-      const query = new URLSearchParams({ tenantId: TENANT_ID });
-      return normalizeProduct((await request(`/public/catalog/products/${encodeURIComponent(id)}?${query}`)).product);
+      return normalizeProduct((await request(`/public/catalog/products/${encodeURIComponent(id)}`)).product);
     },
     create: async (data) => {
       const form = new FormData();
@@ -136,12 +132,12 @@ export const api = {
     add: async (productId, quantity = 1) => { await request("/carts", { method: "POST", body: json({ productId, quantity }) }); return api.cart.get(); },
     setQuantity: async (productId, quantity) => { await request(`/carts/${encodeURIComponent(productId)}`, { method: "PUT", body: json({ quantity }) }); return api.cart.get(); },
     remove: async (productId) => { await request(`/carts/${encodeURIComponent(productId)}`, { method: "DELETE" }); return api.cart.get(); },
-    clear: async () => { await request("/carts", { method: "DELETE" }); return { items: [], totalAmount: 0 }; },
+    clear: async (tenantId) => { await request("/carts", { method: "DELETE", body: json(tenantId ? { tenantId } : {}) }); return api.cart.get(); },
   },
   orders: {
     list: async () => ((await request("/orders")).orders || []).map(normalizeOrder),
     get: async (id) => normalizeOrder((await request(`/orders/${encodeURIComponent(id)}`)).order),
-    create: async (shippingAddress) => normalizeOrder((await request("/orders", { method: "POST", body: json({ shippingAddress }) })).order),
+    create: async (shippingAddress, tenantId) => normalizeOrder((await request("/orders", { method: "POST", body: json({ shippingAddress, tenantId }) })).order),
     requestCancellation: async (id, reason) => normalizeOrder((await request(`/orders/${encodeURIComponent(id)}/cancel-request`, { method: "PATCH", body: json({ reason }) })).order),
     requestReturn: async (id, reason) => normalizeOrder((await request(`/orders/${encodeURIComponent(id)}/return-request`, { method: "PATCH", body: json({ reason }) })).order),
     updateStatus: async (id, status) => normalizeOrder((await request(`/orders/${encodeURIComponent(id)}/status`, { method: "PATCH", body: json({ status }) })).order),

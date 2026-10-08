@@ -224,4 +224,3 @@ export const deleteAdminProduct = async (req, res) => {
         });
     }
 };
-
