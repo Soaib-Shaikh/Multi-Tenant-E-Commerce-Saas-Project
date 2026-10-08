@@ -17,7 +17,7 @@ export const Footer = () => {
   return (
     <footer className="bg-slate-900 text-slate-300 pt-16 pb-12 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Value Proposition Highlights */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pb-12 mb-12 border-b border-slate-800">
           <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-800/50 border border-slate-800">
@@ -62,7 +62,8 @@ export const Footer = () => {
         </div>
 
         {/* Main Footer Links */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 mb-12">
+
           {/* Brand Info */}
           <div className="lg:col-span-2 space-y-4">
             <Link to="/" className="flex items-center gap-2">
@@ -73,12 +74,17 @@ export const Footer = () => {
                 Aura<span className="text-indigo-400">Store</span>
               </span>
             </Link>
+
             <p className="text-sm text-slate-400 max-w-sm leading-relaxed">
               Curated premium lifestyle products designed for modern tech enthusiasts, fashion lovers, and minimalist homes.
             </p>
+
             {/* Newsletter */}
             <div className="pt-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Subscribe to our newsletter</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                Subscribe to our newsletter
+              </p>
+
               {subscribed ? (
                 <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-4 py-2.5 rounded-xl text-xs font-semibold">
                   ✓ Thank you for subscribing! Check your inbox for exclusive perks.
@@ -93,6 +99,7 @@ export const Footer = () => {
                     required
                     className="bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs rounded-xl px-4 py-3 flex-1 focus:outline-none focus:border-indigo-500"
                   />
+
                   <button
                     type="submit"
                     className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-3 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5"
@@ -106,46 +113,173 @@ export const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Quick Links</h4>
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
+              Quick Links
+            </h4>
+
             <ul className="space-y-2.5 text-xs text-slate-400">
-              <li><Link to="/" className="hover:text-white transition-colors">Home Page</Link></li>
-              <li><Link to="/products" className="hover:text-white transition-colors">Featured Catalog</Link></li>
-              <li><Link to="/cart" className="hover:text-white transition-colors">Shopping Cart</Link></li>
-              <li><Link to="/checkout" className="hover:text-white transition-colors">Checkout Express</Link></li>
+              <li>
+                <Link to="/" className="hover:text-white transition-colors">
+                  Home Page
+                </Link>
+              </li>
+
+              <li>
+                <Link to="/products" className="hover:text-white transition-colors">
+                  Featured Catalog
+                </Link>
+              </li>
+
+              <li>
+                <Link to="/cart" className="hover:text-white transition-colors">
+                  Shopping Cart
+                </Link>
+              </li>
+
+              <li>
+                <Link to="/checkout" className="hover:text-white transition-colors">
+                  Checkout Express
+                </Link>
+              </li>
             </ul>
           </div>
 
           {/* Categories */}
           <div>
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Categories</h4>
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
+              Categories
+            </h4>
+
             <ul className="space-y-2.5 text-xs text-slate-400">
-              <li><Link to="/products?category=Electronics" className="hover:text-white transition-colors">Electronics & Audio</Link></li>
-              <li><Link to="/products?category=Fashion" className="hover:text-white transition-colors">Modern Fashion</Link></li>
-              <li><Link to="/products?category=Home%20%26%20Office" className="hover:text-white transition-colors">Home & Office</Link></li>
+              <li>
+                <Link
+                  to="/products?category=Electronics"
+                  className="hover:text-white transition-colors"
+                >
+                  Electronics & Audio
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  to="/products?category=Fashion"
+                  className="hover:text-white transition-colors"
+                >
+                  Modern Fashion
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  to="/products?category=Home%20%26%20Office"
+                  className="hover:text-white transition-colors"
+                >
+                  Home & Office
+                </Link>
+              </li>
             </ul>
           </div>
 
           {/* Customer Account */}
           <div>
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Account</h4>
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
+              Account
+            </h4>
+
             <ul className="space-y-2.5 text-xs text-slate-400">
-              <li><Link to="/profile" className="hover:text-white transition-colors">My Profile</Link></li>
-              <li><Link to="/orders" className="hover:text-white transition-colors">Order History & Tracking</Link></li>
-              <li><Link to="/login" className="hover:text-white transition-colors">Customer Login</Link></li>
-              <li><Link to="/register" className="hover:text-white transition-colors">Create Account</Link></li>
+              <li>
+                <Link to="/profile" className="hover:text-white transition-colors">
+                  My Profile
+                </Link>
+              </li>
+
+              <li>
+                <Link to="/orders" className="hover:text-white transition-colors">
+                  Order History & Tracking
+                </Link>
+              </li>
+
+              <li>
+                <Link to="/login" className="hover:text-white transition-colors">
+                  Customer Login
+                </Link>
+              </li>
+
+              <li>
+                <Link to="/register" className="hover:text-white transition-colors">
+                  Create Account
+                </Link>
+              </li>
             </ul>
           </div>
+
+          {/* Legal & Support */}
+          <div>
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
+              Legal & Support
+            </h4>
+
+            <ul className="space-y-2.5 text-xs text-slate-400">
+              <li>
+                <Link
+                  to="/terms-and-conditions"
+                  className="hover:text-white transition-colors"
+                >
+                  Terms & Conditions
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  to="/privacy-policy"
+                  className="hover:text-white transition-colors"
+                >
+                  Privacy Policy
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  to="/shipping-policy"
+                  className="hover:text-white transition-colors"
+                >
+                  Shipping Policy
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  to="/cancellation-refund"
+                  className="hover:text-white transition-colors"
+                >
+                  Cancellation & Refunds
+                </Link>
+              </li>
+
+              <li>
+                <Link
+                  to="/contact-us"
+                  className="hover:text-white transition-colors"
+                >
+                  Contact Us
+                </Link>
+              </li>
+            </ul>
+          </div>
+
         </div>
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>© 2026 AuraStore E-Commerce Platform. All rights reserved.</p>
+
           <div className="flex items-center gap-1">
             <span>Made with</span>
             <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 inline" />
             <span>for MERN Stack App</span>
           </div>
         </div>
+
       </div>
     </footer>
   );

@@ -243,7 +243,7 @@ export const verifyPayment = async (req, res) => {
                 const updatedCoupon = await Coupon.findOneAndUpdate(
                     {
                         _id: order.couponId,
-                        tenantId: req.tenantId
+                        tenantId: order.tenantId
                     },
                     {
                         $inc: { usedCount: 1 }

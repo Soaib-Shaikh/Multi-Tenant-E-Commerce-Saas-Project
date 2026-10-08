@@ -30,6 +30,11 @@ import VendorOrders from "./pages/vendor/Orders";
 import VendorInventory from "./pages/vendor/Inventory";
 import VendorSettings from "./pages/vendor/Settings";
 import AddProduct from "./pages/vendor/AddProduct";
+import TermsAndConditions from "./pages/legal/TermsAndConditions";
+import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
+import ShippingPolicy from "./pages/legal/ShippingPolicy";
+import CancellationRefundPolicy from "./pages/legal/CancellationRefundPolicy";
+import ContactUs from "./pages/legal/ContactUs";
 
 function ProtectedRoute({ roles, children }) {
   const user = useSelector((state) => state.auth.user);
@@ -98,6 +103,14 @@ function App() {
         <Route path="/vendor/inventory" element={<ProtectedRoute roles={["vendor"]}><WorkspaceLayout role="vendor"><VendorInventory /></WorkspaceLayout></ProtectedRoute>} />
         <Route path="/vendor/settings" element={<ProtectedRoute roles={["vendor"]}><WorkspaceLayout role="vendor"><VendorSettings /></WorkspaceLayout></ProtectedRoute>} />
         <Route path="*" element={<main className="mx-auto max-w-4xl px-6 py-24 text-center"><h1 className="text-3xl font-bold">Page not found</h1><p className="mt-3 text-gray-600">The page you requested does not exist.</p></main>} />
+        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/shipping-policy" element={<ShippingPolicy />} />
+        <Route
+          path="/cancellation-refund"
+          element={<CancellationRefundPolicy />}
+        />
+        <Route path="/contact-us" element={<ContactUs />} />
       </Routes>
     </BrowserRouter>
   );

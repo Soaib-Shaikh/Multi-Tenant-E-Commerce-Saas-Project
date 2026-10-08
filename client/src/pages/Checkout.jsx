@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, CreditCard, Truck, MapPin, CheckCircle, ArrowRight, Lock, Sparkles, Building, Phone } from 'lucide-react';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
+import { api, loadRazorpay } from '../api/client';
 
 export const Checkout = () => {
   const { cartItems, grandTotal, subtotal, discount, shippingCost, tax, clearCart } = useCart();
@@ -28,17 +29,198 @@ export const Checkout = () => {
 
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handlePlaceOrder = (e) => {
+  const handlePlaceOrder = async (e) => {
     e.preventDefault();
-    const orderId = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
-    setPlacedOrderId(orderId);
-    setOrderPlaced(true);
-    clearCart();
+
+    if (paymentLoading) return;
+
+    if (formData.paymentMethod === "cod") {
+      alert(
+        "Cash on Delivery is not available yet. Please select Credit Card or UPI / Wallet."
+      );
+      return;
+    }
+
+    const tenantId = cartItems?.[0]?.tenantId;
+
+    if (!tenantId) {
+      alert(
+        "Store information is missing. Please refresh the page and try again."
+      );
+      return;
+    }
+
+    setPaymentLoading(true);
+
+    try {
+      const shippingAddress = {
+        name: formData.fullName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        address: formData.street.trim(),
+        city: formData.city.trim(),
+        state: formData.state.trim(),
+        pincode: formData.zip.trim(),
+        country: formData.country,
+      };
+
+      const order = await api.orders.create(
+        shippingAddress,
+        tenantId
+      );
+
+      const realOrderId = order?.id || order?._id;
+
+      if (!realOrderId) {
+        throw new Error(
+          "Order was created but order ID was not returned."
+        );
+      }
+
+      const paymentData =
+        await api.payments.create(realOrderId);
+
+      if (!paymentData?.razorpayOrder?.id) {
+        throw new Error(
+          "Razorpay order was not created."
+        );
+      }
+
+      const razorpayLoaded =
+        await loadRazorpay();
+
+      if (!razorpayLoaded || !window.Razorpay) {
+        throw new Error(
+          "Razorpay failed to load. Please check your internet connection."
+        );
+      }
+
+      const options = {
+        key: paymentData.keyId,
+
+        amount:
+          paymentData.razorpayOrder.amount,
+
+        currency:
+          paymentData.razorpayOrder.currency || "INR",
+
+        name: "E-Commerce SaaS",
+
+        description:
+          `Payment for Order ${realOrderId}`,
+
+        order_id:
+          paymentData.razorpayOrder.id,
+
+        handler: async function (response) {
+          try {
+            const verifyResult =
+              await api.payments.verify({
+                razorpay_order_id:
+                  response.razorpay_order_id,
+
+                razorpay_payment_id:
+                  response.razorpay_payment_id,
+
+                razorpay_signature:
+                  response.razorpay_signature,
+
+                orderId: realOrderId,
+              });
+
+            if (!verifyResult?.success) {
+              throw new Error(
+                verifyResult?.message ||
+                "Payment verification failed."
+              );
+            }
+
+            clearCart();
+
+            setPlacedOrderId(
+              realOrderId
+            );
+
+            setOrderPlaced(true);
+
+          } catch (error) {
+            console.error(
+              "PAYMENT VERIFY ERROR:",
+              error
+            );
+
+            alert(
+              error.message ||
+              "Payment verification failed."
+            );
+
+          } finally {
+            setPaymentLoading(false);
+          }
+        },
+
+        prefill: {
+          name: formData.fullName,
+          email: formData.email,
+          contact: formData.phone,
+        },
+
+        notes: {
+          orderId: realOrderId,
+        },
+
+        theme: {
+          color: "#4f46e5",
+        },
+
+        modal: {
+          ondismiss: function () {
+            setPaymentLoading(false);
+          },
+        },
+      };
+
+      const razorpay =
+        new window.Razorpay(options);
+
+      razorpay.on(
+        "payment.failed",
+        function (response) {
+          console.error(
+            "RAZORPAY PAYMENT FAILED:",
+            response?.error
+          );
+
+          setPaymentLoading(false);
+
+          alert(
+            response?.error?.description ||
+            "Payment failed. Please try again."
+          );
+        }
+      );
+
+      razorpay.open();
+
+    } catch (error) {
+      console.error(
+        "CHECKOUT PAYMENT ERROR:",
+        error
+      );
+
+      setPaymentLoading(false);
+
+      alert(
+        error.message ||
+        "Something went wrong while placing the order."
+      );
+    }
   };
 
   if (orderPlaced) {
@@ -77,7 +259,7 @@ export const Checkout = () => {
 
   return (
     <div className="space-y-8">
-      
+
       {/* Header */}
       <div className="pb-4 border-b border-slate-200">
         <h1 className="text-3xl font-black text-slate-900">Checkout Express</h1>
@@ -87,10 +269,10 @@ export const Checkout = () => {
       </div>
 
       <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Step 1 & 2 & 3: Shipping & Payment Controls */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* Section 1: Shipping Address */}
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm space-y-4">
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 pb-3 border-b border-slate-100">
@@ -228,11 +410,10 @@ export const Checkout = () => {
               <button
                 type="button"
                 onClick={() => setFormData(p => ({ ...p, paymentMethod: 'card' }))}
-                className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${
-                  formData.paymentMethod === 'card'
+                className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${formData.paymentMethod === 'card'
                     ? 'border-indigo-600 bg-indigo-50/50 text-indigo-600'
                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 <CreditCard className="w-5 h-5" /> Credit Card
               </button>
@@ -240,11 +421,10 @@ export const Checkout = () => {
               <button
                 type="button"
                 onClick={() => setFormData(p => ({ ...p, paymentMethod: 'upi' }))}
-                className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${
-                  formData.paymentMethod === 'upi'
+                className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${formData.paymentMethod === 'upi'
                     ? 'border-indigo-600 bg-indigo-50/50 text-indigo-600'
                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 <Sparkles className="w-5 h-5" /> UPI / Wallet
               </button>
@@ -252,11 +432,10 @@ export const Checkout = () => {
               <button
                 type="button"
                 onClick={() => setFormData(p => ({ ...p, paymentMethod: 'cod' }))}
-                className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${
-                  formData.paymentMethod === 'cod'
+                className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${formData.paymentMethod === 'cod'
                     ? 'border-indigo-600 bg-indigo-50/50 text-indigo-600'
                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 <Building className="w-5 h-5" /> Cash on Delivery
               </button>
@@ -350,9 +529,16 @@ export const Checkout = () => {
 
             <button
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-95"
+              disabled={paymentLoading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-95"
             >
-              Place Order (${grandTotal.toFixed(2)}) <ArrowRight className="w-4 h-4" />
+              {paymentLoading
+                ? "Processing Payment..."
+                : `Place Order ($${grandTotal.toFixed(2)})`}
+
+              {!paymentLoading && (
+                <ArrowRight className="w-4 h-4" />
+              )}
             </button>
           </div>
         </div>
