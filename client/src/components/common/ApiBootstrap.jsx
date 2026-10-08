@@ -20,6 +20,9 @@ export default function ApiBootstrap() {
       return undefined;
     }
 
+    // Prevent a previous account's cached products from appearing before this
+    // user's JWT-scoped catalog request completes.
+    dispatch(setProducts([]));
     let active = true;
     const refresh = async () => {
       try {

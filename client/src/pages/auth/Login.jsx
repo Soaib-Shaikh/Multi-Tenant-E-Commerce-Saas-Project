@@ -27,7 +27,7 @@ function Login({ adminOnly = false }) {
         throw new Error(`This is a ${accountType} account. Select ${accountType} login to continue.`);
       }
       dispatch(login({ user, token: result.token }));
-      const destination = location.state?.from || (user.role === "admin" ? "/admin/dashboard" : user.role === "vendor" ? "/vendor/dashboard" : "/");
+      const destination = user.role === "admin" ? "/admin/dashboard" : user.role === "vendor" ? "/vendor/dashboard" : location.state?.from || "/";
       navigate(destination, { replace: true });
     } catch (requestError) {
       setError(requestError.message || "Could not sign in. Check your details and try again.");

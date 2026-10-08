@@ -42,22 +42,36 @@ function ProtectedRoute({ roles, children }) {
   return children;
 }
 
+function RoleLanding() {
+  const user = useSelector((state) => state.auth.user);
+  if (user?.role === "vendor") return <Navigate to="/vendor/dashboard" replace />;
+  if (user?.role === "admin") return <Navigate to="/admin/dashboard" replace />;
+  return <Home />;
+}
+
+function CustomerStorefront({ children }) {
+  const user = useSelector((state) => state.auth.user);
+  if (user?.role === "vendor") return <Navigate to="/vendor/dashboard" replace />;
+  if (user?.role === "admin") return <Navigate to="/admin/dashboard" replace />;
+  return children;
+}
+
 function App() {
   return (
     <BrowserRouter>
       <ApiBootstrap />
-      <Navbar />
+      <RoleAwareNavbar />
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/product/:id" element={<ProductDetails />} />
-        <Route path="/products/:id" element={<ProductDetails />} />
+        <Route path="/" element={<RoleLanding />} />
+        <Route path="/products" element={<CustomerStorefront><Products /></CustomerStorefront>} />
+        <Route path="/product/:id" element={<CustomerStorefront><ProductDetails /></CustomerStorefront>} />
+        <Route path="/products/:id" element={<CustomerStorefront><ProductDetails /></CustomerStorefront>} />
         <Route path="/cart" element={<ProtectedRoute roles={["customer"]}><Cart /></ProtectedRoute>} />
         <Route path="/checkout" element={<ProtectedRoute roles={["customer"]}><Checkout /></ProtectedRoute>} />
         <Route path="/order-success" element={<ProtectedRoute roles={["customer"]}><OrderSuccess /></ProtectedRoute>} />
         <Route path="/orders" element={<ProtectedRoute roles={["customer"]}><Orders /></ProtectedRoute>} />
         <Route path="/orders/:id" element={<ProtectedRoute roles={["customer"]}><OrderDetails /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute roles={["customer"]}><Profile /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin/login" element={<Login adminOnly />} />
         <Route path="/signup" element={<Register />} />
@@ -87,6 +101,11 @@ function App() {
       </Routes>
     </BrowserRouter>
   );
+}
+
+function RoleAwareNavbar() {
+  const user = useSelector((state) => state.auth.user);
+  return !user || user.role === "customer" ? <Navbar /> : null;
 }
 
 export default App;

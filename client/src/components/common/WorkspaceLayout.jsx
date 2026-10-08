@@ -11,14 +11,11 @@ const workspaceLinks = {
     ["Analytics", "/admin/analytics", "▥"],
   ],
   vendor: [
-    ["Overview", "/vendor/dashboard", "▦"],
-    ["Products", "/vendor/products", "□"],
+    ["Dashboard", "/vendor/dashboard", "▦"],
+    ["My Products", "/vendor/products", "□"],
     ["Add product", "/vendor/products/add", "+"],
-    ["Categories", "/vendor/categories", "◇"],
-    ["Inventory", "/vendor/inventory", "▤"],
     ["Orders", "/vendor/orders", "▣"],
-    ["Coupons", "/vendor/coupons", "%"],
-    ["Store settings", "/vendor/settings", "⚙"],
+    ["Settings", "/vendor/settings", "⚙"],
   ],
 };
 
